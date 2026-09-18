@@ -60,3 +60,12 @@ def service_token(client):
     data = res.get_json()
     token = data.get("data", {}).get("access_token") or data.get("access_token")
     return token
+
+@pytest.fixture
+def auth_headers(manager_token, supervisor_token, service_token):
+    return {
+        "manager": {"Authorization": f"Bearer {manager_token}"},
+        "supervisor": {"Authorization": f"Bearer {supervisor_token}"},
+        "service": {"Authorization": f"Bearer {service_token}"}
+    }
+

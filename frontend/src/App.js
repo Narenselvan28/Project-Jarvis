@@ -4,9 +4,12 @@ import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import FactoryPage from "./pages/FactoryPage";
+import OrdersPage from "./pages/OrdersPage";
 import SupervisorReviewPage from "./pages/SupervisorReviewPage";
 import MaintenancePage from "./pages/MaintenancePage";
-import SimulationPage from "./pages/SimulationPage";
+import ErpPage from "./pages/ErpPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import AuditLogPage from "./pages/AuditLogPage";
 import api from "./services/api";
 
 export default function App() {
@@ -23,9 +26,10 @@ export default function App() {
         api
           .get("/auth/me")
           .then((res) => {
-            if (res.data?.user) {
-              setUser(res.data.user);
-              localStorage.setItem("user", JSON.stringify(res.data.user));
+            const userData = res.data?.data?.user || res.data?.user;
+            if (userData) {
+              setUser(userData);
+              localStorage.setItem("user", JSON.stringify(userData));
             }
           })
           .catch(() => {
@@ -81,9 +85,9 @@ export default function App() {
         >
           <i className="fa-solid fa-industry"></i>
         </div>
-        <div style={{ fontSize: "1rem", fontWeight: 700, color: "#1F2937" }}>ReFlow</div>
+        <div style={{ fontSize: "1rem", fontWeight: 700, color: "#1F2937" }}>ReFlow ERP</div>
         <div style={{ fontSize: "0.8rem", color: "#6B7280", marginTop: "0.25rem" }}>
-          Initializing Adaptive Production Operations...
+          Initializing Unified Enterprise Manufacturing Platform...
         </div>
       </div>
     );
@@ -111,28 +115,35 @@ export default function App() {
             user ? <AppLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
           }
         >
-          {/* PRIMARY FACTORY FLOOR (Lanes & Orders views) */}
+          {/* PRIMARY FACTORY FLOOR (Lanes topology & circular machine nodes) */}
           <Route path="/factory" element={<FactoryPage user={user} />} />
 
-          {/* ORDERS REGISTRY (Redirects to unified Orders view on Factory Floor) */}
-          <Route path="/orders" element={<Navigate to="/factory?view=orders" replace />} />
-          <Route path="/orders/:orderId" element={<Navigate to="/factory?view=orders" replace />} />
+          {/* ORDERS REGISTRY (Full textile orders & routing lifecycle) */}
+          <Route path="/orders" element={<OrdersPage user={user} />} />
+          <Route path="/orders/:orderId" element={<OrdersPage user={user} />} />
 
-          {/* SUPERVISOR REVIEW (Meerpaarvai - Plan Approvals & Overrides) */}
+          {/* SUPERVISOR REVIEW (Plan Approvals & Overrides) */}
           <Route path="/supervisor" element={<SupervisorReviewPage user={user} />} />
 
-          {/* FLEET MAINTENANCE (Paramaippu - Work Orders & Machine Availability) */}
+          {/* FLEET MAINTENANCE & INVOICES */}
           <Route path="/maintenance" element={<MaintenancePage user={user} />} />
 
-          {/* DISRUPTION SIMULATION SANDBOX (Ozhungu - What-if Modeling) */}
-          <Route path="/simulation" element={<SimulationPage user={user} />} />
+          {/* ENTERPRISE ERP (Contracts & SLA, Materials, Workforce) */}
+          <Route path="/erp" element={<ErpPage user={user} />} />
+
+          {/* PRODUCTION ANALYTICS & ML METRICS */}
+          <Route path="/analytics" element={<AnalyticsPage user={user} />} />
+
+          {/* IMMUTABLE AUDIT TRAIL */}
+          <Route path="/audit" element={<AuditLogPage user={user} />} />
+          <Route path="/audit-logs" element={<AuditLogPage user={user} />} />
+
+          {/* DISRUPTION SIMULATION REDIRECTS TO REAL API WORKFLOW (Prompt Section 23) */}
+          <Route path="/simulation" element={<Navigate to="/factory" replace />} />
 
           {/* LEGACY REDIRECTS */}
           <Route path="/schedule" element={<Navigate to="/factory" replace />} />
           <Route path="/schedule/:orderId" element={<Navigate to="/factory?view=orders" replace />} />
-          <Route path="/analytics" element={<Navigate to="/factory" replace />} />
-          <Route path="/audit" element={<Navigate to="/factory" replace />} />
-          <Route path="/audit-logs" element={<Navigate to="/factory" replace />} />
           <Route path="*" element={<Navigate to="/factory" replace />} />
         </Route>
       </Routes>

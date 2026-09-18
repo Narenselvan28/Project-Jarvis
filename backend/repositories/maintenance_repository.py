@@ -30,7 +30,10 @@ class MaintenanceRepository(BaseRepository):
         priority: str = "HIGH",
         estimated_hours: float = 4.0,
         disruption_id: Optional[str] = None,
-        assigned_to: Optional[str] = None
+        assigned_to: Optional[str] = None,
+        assigned_service_person_name: Optional[str] = None,
+        defect_description: Optional[str] = None,
+        affected_order_id: Optional[str] = None
     ) -> Dict[str, Any]:
         count = self.count() + 1
         wo_id = f"WO-{count:05d}"
@@ -44,6 +47,11 @@ class MaintenanceRepository(BaseRepository):
             "status": "OPEN",
             "assigned_to": assigned_to,
             "assigned_worker_id": assigned_to,
+            "assigned_service_person_id": assigned_to,
+            "assigned_service_person_name": assigned_service_person_name or "Vikram Patel",
+            "defect_description": defect_description or fault_type,
+            "affected_order_id": affected_order_id,
+            "invoice_id": None,
             "estimated_hours": float(estimated_hours),
             "actual_hours": 0.0,
             "notes": "",

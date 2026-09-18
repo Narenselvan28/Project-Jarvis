@@ -34,3 +34,7 @@ htmlcov/
 .env.local
 .DS_Store
 Thumbs.db
+
+# Workspace scratch files & legacy folder
+sample.txt
+Ignitrron/

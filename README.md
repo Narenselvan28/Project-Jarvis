@@ -1,8 +1,23 @@
 # ReFlow
 
-### Adaptive Production Scheduling & Disruption Recovery
+### Unified Enterprise Manufacturing ERP & Production Intelligence Platform
 
-ReFlow is a production scheduling system that combines machine-state monitoring, machine suitability prediction, constraint-based optimization, and human approval to generate and recover manufacturing schedules when production conditions change.
+ReFlow is a single unified enterprise manufacturing ERP and production scheduling platform. It integrates commercial contracts, SLA penalty tracking, raw material inventory (BOM), departmental workforce capacity, and fleet maintenance billing around a locked production intelligence core: XGBoost processing-time regressors, machine failure-risk classifiers, multi-factor suitability scoring, SHAP explainability, and Google OR-Tools CP-SAT constraint programming.
+
+```mermaid
+graph TD
+    ERP[Enterprise ERP & Business Context] --> |Contracts, Materials BOM, Workforce| REF[Production Intelligence Core]
+    REF --> ML[XGBoost Processing Time & Failure Risk Models]
+    ML --> SC[Multi-Factor Machine Suitability]
+    SC --> OR[Google OR-Tools CP-SAT Scheduling Engine]
+    OR --> SCHED[Production Plan: Option A vs Option B]
+    SCHED --> APP[Supervisor / Manager Approval]
+    APP --> FAC[Factory Floor Execution & SVG Topology]
+    FAC --> DISR[Real-Time Disruption Recovery: Machine FAILED]
+    DISR --> WO[Maintenance Work Orders & Invoicing]
+    WO --> |Machine Restored to AVAILABLE| FAC
+    FAC --> |Progress & Consumption| ERP
+```
 
 ---
 

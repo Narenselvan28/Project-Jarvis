@@ -14,7 +14,7 @@ def seed_mongo():
     mongo_manager.reset_database()
     db = mongo_manager.get_db()
 
-    # 1. Seed Users (Roles: MANAGER, SUPERVISOR, SERVICE_PERSON)
+    # 1. Seed Users (Roles: MANAGER, SUPERVISOR, SERVICE_PERSON, ADMIN)
     users = [
         {
             "id": "USR-MGR-01",
@@ -22,7 +22,8 @@ def seed_mongo():
             "password_hash": generate_password_hash("password123"),
             "role": "MANAGER",
             "email": "manager@reflow.io",
-            "full_name": "Elena Vance (Plant Director)",
+            "full_name": "Sarah Jenkins (Plant Director)",
+            "avatar_url": "https://i.pravatar.cc/150?img=32",
             "created_at": datetime.utcnow().isoformat()
         },
         {
@@ -31,7 +32,8 @@ def seed_mongo():
             "password_hash": generate_password_hash("password123"),
             "role": "SUPERVISOR",
             "email": "supervisor@reflow.io",
-            "full_name": "Marcus Vance (Shift Lead)",
+            "full_name": "Rajesh Kumar (Shopfloor Lead)",
+            "avatar_url": "https://i.pravatar.cc/150?img=11",
             "created_at": datetime.utcnow().isoformat()
         },
         {
@@ -40,7 +42,48 @@ def seed_mongo():
             "password_hash": generate_password_hash("password123"),
             "role": "SERVICE_PERSON",
             "email": "service@reflow.io",
-            "full_name": "Viktor Stone (Senior Technician)",
+            "full_name": "Vikram Patel (Mechanical Lead)",
+            "avatar_url": "https://i.pravatar.cc/150?img=60",
+            "created_at": datetime.utcnow().isoformat()
+        },
+        {
+            "id": "USR-SRV-02",
+            "username": "service1",
+            "password_hash": generate_password_hash("password123"),
+            "role": "SERVICE_PERSON",
+            "email": "service1@reflow.io",
+            "full_name": "Vikram Patel (Mechanical Lead)",
+            "avatar_url": "https://i.pravatar.cc/150?img=60",
+            "created_at": datetime.utcnow().isoformat()
+        },
+        {
+            "id": "USR-SRV-03",
+            "username": "service2",
+            "password_hash": generate_password_hash("password123"),
+            "role": "SERVICE_PERSON",
+            "email": "service2@reflow.io",
+            "full_name": "Michael Chang (Electrical Specialist)",
+            "avatar_url": "https://i.pravatar.cc/150?img=68",
+            "created_at": datetime.utcnow().isoformat()
+        },
+        {
+            "id": "USR-SRV-04",
+            "username": "service3",
+            "password_hash": generate_password_hash("password123"),
+            "role": "SERVICE_PERSON",
+            "email": "service3@reflow.io",
+            "full_name": "Elena Rostova (Automation Engineer)",
+            "avatar_url": "https://i.pravatar.cc/150?img=47",
+            "created_at": datetime.utcnow().isoformat()
+        },
+        {
+            "id": "USR-ADM-01",
+            "username": "admin",
+            "password_hash": generate_password_hash("password123"),
+            "role": "ADMIN",
+            "email": "admin@reflow.io",
+            "full_name": "Alexander Vance (System Admin)",
+            "avatar_url": "https://i.pravatar.cc/150?img=8",
             "created_at": datetime.utcnow().isoformat()
         }
     ]
@@ -159,11 +202,20 @@ def seed_mongo():
         m["machine_age"] = round(m["runtime_hours"] / 8760.0 + 1.2, 1)
         m["utilization"] = round(random.uniform(70.0, 92.0), 1) if m["status"] == "RUNNING" else 0.0
         m["worker_requirement"] = 1
+        m["workforce_required"] = 1
         m["required_skill"] = m["process_id"]
         m["setup_time"] = 15.0
+        m["setup_time_min"] = 15
+        m["processing_time_min"] = 45
         m["production_cost_per_hour"] = m["hourly_rate"]
+        m["hourly_production_cost"] = m["hourly_rate"]
+        m["downtime_cost_per_hour"] = round(m["hourly_rate"] * 2.5, 2)
+        m["capacity_units_per_batch"] = m["capacity"]
+        m["total_operating_hours"] = m["runtime_hours"]
+        m["health_score"] = 95 if m["status"] != "MAINTENANCE" else 45
+        m["last_maintenance_date"] = m.get("last_maintenance", "2026-08-15")
+        m["next_maintenance_date"] = m.get("next_maintenance", "2026-10-15")
         m["maintenance_status"] = "OK" if m["status"] != "MAINTENANCE" else "UNDER_REPAIR"
-        m["next_maintenance"] = "2026-10-15"
         m["previous_failures"] = 1 if m["failure_risk"] > 0.2 else 0
         m["historical_downtime"] = round(m["previous_failures"] * 4.5, 1)
         m["current_order_id"] = "ORD-1042" if m["id"] == "CUT-02" else None
@@ -206,13 +258,89 @@ def seed_mongo():
 
     # 6. Seed Materials & Inventory
     materials = [
-        {"code": "MAT-COTTON-180", "name": "100% Combed Cotton Single Jersey 180 GSM", "unit": "KG", "stock_quantity": 8500.0, "reorder_level": 1200.0, "cost_per_unit": 380.0},
-        {"code": "MAT-POLY-BLEND", "name": "Poly-Cotton Fleece 280 GSM", "unit": "KG", "stock_quantity": 4200.0, "reorder_level": 800.0, "cost_per_unit": 420.0},
-        {"code": "MAT-THREAD-TEX24", "name": "Spun Polyester Sewing Thread Tex 24", "unit": "SPOOLS", "stock_quantity": 1500.0, "reorder_level": 250.0, "cost_per_unit": 65.0},
-        {"code": "MAT-RIB-1X1", "name": "Cotton Spandex 1x1 Collar Ribbing", "unit": "KG", "stock_quantity": 1200.0, "reorder_level": 200.0, "cost_per_unit": 450.0},
-        {"code": "MAT-POLYBAGS", "name": "Self-Sealing Transparent Polybags (M/L/XL)", "unit": "UNITS", "stock_quantity": 45000.0, "reorder_level": 5000.0, "cost_per_unit": 3.5}
+        {"id": "MAT-COT-01", "code": "MAT-COTTON-180", "name": "100% Combed Cotton Single Jersey 180 GSM", "category": "Raw Cotton", "unit": "KG", "stock_quantity": 12000.0, "allocated_quantity": 2500.0, "available_quantity": 9500.0, "reorder_level": 1200.0, "cost_per_unit": 380.0, "unit_cost": 380.0, "status": "In Stock", "supplier": "Gujarat Cotton Exporters"},
+        {"id": "MAT-COT-02", "code": "MAT-POLY-BLEND", "name": "Poly-Cotton Fleece 280 GSM", "category": "Yarns", "unit": "KG", "stock_quantity": 8500.0, "allocated_quantity": 1500.0, "available_quantity": 7000.0, "reorder_level": 800.0, "cost_per_unit": 420.0, "unit_cost": 420.0, "status": "In Stock", "supplier": "Coimbatore Spun Mills"},
+        {"id": "MAT-DYE-01", "code": "MAT-DYE-NAVY", "name": "Reactive Navy Dye #0A192F", "category": "Dyes & Chemicals", "unit": "KG", "stock_quantity": 2500.0, "allocated_quantity": 400.0, "available_quantity": 2100.0, "reorder_level": 300.0, "cost_per_unit": 550.0, "unit_cost": 550.0, "status": "In Stock", "supplier": "Huntsman Textile Dyes"},
+        {"id": "MAT-TRIM-01", "code": "MAT-THREAD-TEX24", "name": "Spun Polyester Sewing Thread Tex 24", "category": "Trims & Packing", "unit": "SPOOLS", "stock_quantity": 4500.0, "allocated_quantity": 500.0, "available_quantity": 4000.0, "reorder_level": 250.0, "cost_per_unit": 65.0, "unit_cost": 65.0, "status": "In Stock", "supplier": "Coats India"},
+        {"id": "MAT-RIB-01", "code": "MAT-RIB-1X1", "name": "Cotton Spandex 1x1 Collar Ribbing", "category": "Yarns", "unit": "KG", "stock_quantity": 3000.0, "allocated_quantity": 600.0, "available_quantity": 2400.0, "reorder_level": 200.0, "cost_per_unit": 450.0, "unit_cost": 450.0, "status": "In Stock", "supplier": "Tirupur Knitters Ltd"},
+        {"id": "MAT-PACK-01", "code": "MAT-POLYBAGS", "name": "Self-Sealing Transparent Polybags (M/L/XL)", "category": "Trims & Packing", "unit": "UNITS", "stock_quantity": 45000.0, "allocated_quantity": 5000.0, "available_quantity": 40000.0, "reorder_level": 5000.0, "cost_per_unit": 3.5, "unit_cost": 3.5, "status": "In Stock", "supplier": "GreenPack Solutions"}
     ]
     db.materials.insert_many(materials)
+
+    # 6B. Seed Workforce Departments & Shift Capacities
+    workforce_data = [
+        {"id": "WF-SPIN", "department": "Spinning", "shift": "SHIFT_1", "total_operators": 25, "active_operators": 20, "available_operators": 5, "hourly_rate": 150.0, "status": "Optimal"},
+        {"id": "WF-KNIT", "department": "Knitting", "shift": "SHIFT_1", "total_operators": 20, "active_operators": 16, "available_operators": 4, "hourly_rate": 160.0, "status": "Optimal"},
+        {"id": "WF-PROC", "department": "Fabric Processing", "shift": "SHIFT_1", "total_operators": 18, "active_operators": 14, "available_operators": 4, "hourly_rate": 175.0, "status": "Optimal"},
+        {"id": "WF-GARM", "department": "Garmenting", "shift": "SHIFT_1", "total_operators": 35, "active_operators": 28, "available_operators": 7, "hourly_rate": 180.0, "status": "Optimal"},
+        {"id": "WF-QC", "department": "QC", "shift": "SHIFT_1", "total_operators": 12, "active_operators": 10, "available_operators": 2, "hourly_rate": 200.0, "status": "Optimal"}
+    ]
+    db.workforce.insert_many(workforce_data)
+
+    # 6C. Seed Service Persons (Specialized Field Technicians)
+    service_persons_data = [
+        {"id": "SP-01", "name": "Vikram Patel", "employee_id": "EMP-SRV-101", "specialization": "Mechanical", "rate": 650.0, "hourly_rate": 650.0, "total_service_hours": 184.5, "completed_repairs_count": 28, "active_repairs_count": 0, "availability": "Available", "email": "service1@reflow.io", "phone": "+91 98765 43210", "avatar_url": "https://i.pravatar.cc/150?img=60"},
+        {"id": "SP-02", "name": "Michael Chang", "employee_id": "EMP-SRV-102", "specialization": "Electrical", "rate": 700.0, "hourly_rate": 700.0, "total_service_hours": 210.0, "completed_repairs_count": 34, "active_repairs_count": 0, "availability": "Available", "email": "service2@reflow.io", "phone": "+91 98765 43211", "avatar_url": "https://i.pravatar.cc/150?img=68"},
+        {"id": "SP-03", "name": "Elena Rostova", "employee_id": "EMP-SRV-103", "specialization": "Control / Automation", "rate": 800.0, "hourly_rate": 800.0, "total_service_hours": 156.0, "completed_repairs_count": 19, "active_repairs_count": 0, "availability": "Available", "email": "service3@reflow.io", "phone": "+91 98765 43212", "avatar_url": "https://i.pravatar.cc/150?img=47"}
+    ]
+    db.service_persons.insert_many(service_persons_data)
+
+    # 6D. Seed Contracts & Customer SLAs
+    now = datetime.utcnow()
+    contracts_data = [
+        {"id": "CON-1042", "order_id": "ORD-1042", "customer_name": "Nordic Athletic Apparel", "contract_date": "2026-09-18", "delivery_deadline": (now + timedelta(hours=12)).isoformat(), "quantity": 12000, "unit": "Pieces", "contract_value": 345000.0, "penalty_per_hour_delay": 6000.0, "status": "Safe"},
+        {"id": "CON-101", "order_id": "ORD-101", "customer_name": "Zavanna Fashion Global", "contract_date": "2026-09-17", "delivery_deadline": (now + timedelta(hours=48)).isoformat(), "quantity": 5000, "unit": "Pieces", "contract_value": 195000.0, "penalty_per_hour_delay": 4500.0, "status": "Safe"},
+        {"id": "CON-102", "order_id": "ORD-102", "customer_name": "Urban Threads UK", "contract_date": "2026-09-16", "delivery_deadline": (now + timedelta(hours=18)).isoformat(), "quantity": 8000, "unit": "Pieces", "contract_value": 280000.0, "penalty_per_hour_delay": 5000.0, "status": "Approaching Deadline"},
+        {"id": "CON-103", "order_id": "ORD-103", "customer_name": "Montpellier Activewear", "contract_date": "2026-09-18", "delivery_deadline": (now + timedelta(hours=64)).isoformat(), "quantity": 4000, "unit": "Pieces", "contract_value": 160000.0, "penalty_per_hour_delay": 4000.0, "status": "Safe"}
+    ]
+    db.contracts.insert_many(contracts_data)
+
+    # 6E. Seed Maintenance Invoices & Initial Work Orders
+    invoices_data = [
+        {
+            "id": "INV-00230",
+            "work_order_id": "WO-00000",
+            "machine_id": "CUT-01",
+            "service_person_id": "SP-01",
+            "service_person_name": "Vikram Patel",
+            "date": "2026-09-15",
+            "problem_summary": "High cutting head vibration and blade deflection",
+            "action_taken": "Replaced linear guide bearings, recalibrated servo tension",
+            "labour_cost": 2400.0,
+            "parts_cost": 5200.0,
+            "additional_cost": 400.0,
+            "total_cost": 8000.0,
+            "downtime_hours": 3.0,
+            "parts_used": "Gerber Tungsten Blade, Linear Guide Bearings #442",
+            "remarks": "Calibrated with zero vibration under max vacuum feed.",
+            "created_at": (now - timedelta(days=3)).isoformat()
+        }
+    ]
+    db.maintenance_invoices.insert_many(invoices_data)
+
+    # Initial active work order for CUT-03 (in MAINTENANCE)
+    db.maintenance_work_orders.insert_one({
+        "id": "WO-00001",
+        "work_order_id": "WO-00001",
+        "machine_id": "CUT-03",
+        "disruption_id": None,
+        "fault_type": "OVERHAUL",
+        "priority": "MEDIUM",
+        "status": "IN_PROGRESS",
+        "assigned_to": "SP-01",
+        "assigned_worker_id": "SP-01",
+        "assigned_service_person_id": "SP-01",
+        "assigned_service_person_name": "Vikram Patel",
+        "defect_description": "Scheduled quarterly blade alignment and servo overhaul",
+        "estimated_hours": 8.0,
+        "actual_hours": 4.0,
+        "notes": "Servicing hydraulic lines and inspecting belt tension",
+        "created_at": (now - timedelta(days=1)).isoformat(),
+        "started_at": (now - timedelta(hours=4)).isoformat(),
+        "repaired_at": None,
+        "verified_at": None,
+        "closed_at": None
+    })
 
     # 7. Seed Products
     products = [
@@ -230,13 +358,38 @@ def seed_mongo():
 
     demo_order = {
         "id": demo_order_id,
+        "order_id": demo_order_id,
         "product_id": 1,
+        "customer": "Nordic Athletic Apparel",
+        "customer_name": "Nordic Athletic Apparel",
         "product_name": "Classic Crew Neck T-Shirt",
+        "product": "Classic Crew Neck T-Shirt",
         "product_code": "PRD-TSHIRT-01",
         "quantity": 12000,
+        "unit": "Pieces",
         "priority": "URGENT",
         "status": "RUNNING",
+        "production_status": "IN_PRODUCTION",
+        "erp_status": "IN_PRODUCTION",
         "deadline_hours": 12.0,
+        "deadline": deadline_12h.isoformat(),
+        "delivery_deadline": deadline_12h.isoformat(),
+        "contract_id": "CON-1042",
+        "required_material": "100% Combed Cotton Single Jersey 180 GSM",
+        "required_color": "Navy Blue #0A192F",
+        "required_fabric": "100% Combed Cotton Single Jersey 180 GSM",
+        "required_garment_type": "Men's Regular Fit",
+        "combing_required": True,
+        "scouring_bleaching_required": True,
+        "compacting_required": True,
+        "printing_required": True,
+        "embroidery_required": True,
+        "workforce_required": 14,
+        "estimated_production_cost": 85000.0,
+        "actual_production_cost": 85000.0,
+        "deadline_status": "Safe",
+        "progress_pct": 23,
+        "current_stage": "Cutting",
         "due_date": deadline_12h.isoformat(),
         "assigned_lane_id": "L01",
         "created_at": (now - timedelta(hours=3)).isoformat()
@@ -343,16 +496,36 @@ def seed_mongo():
         lane = random.choice(["L01", "L02", "L03"])
         o_status = random.choice(["PLANNED", "QUEUED", "RUNNING", "COMPLETED"])
 
+        cust = random.choice(["Acme Apparel Global", "Zavanna Fashion", "Nordic Athletic", "Urban Threads UK", "Montpellier Activewear"])
         o_doc = {
             "id": oid,
+            "order_id": oid,
+            "customer": cust,
+            "customer_name": cust,
             "product_id": p["id"],
             "product_name": p["name"],
+            "product": p["name"],
             "product_code": p["code"],
             "quantity": qty,
+            "unit": "Pieces",
             "priority": prio,
             "status": o_status,
+            "production_status": "COMPLETED" if o_status == "COMPLETED" else ("IN_PRODUCTION" if o_status == "RUNNING" else "SCHEDULED"),
+            "erp_status": "FULFILLED" if o_status == "COMPLETED" else ("IN_PRODUCTION" if o_status == "RUNNING" else "ACTIVE"),
             "deadline_hours": d_hrs,
+            "deadline": (now + timedelta(hours=d_hrs)).isoformat(),
             "due_date": (now + timedelta(hours=d_hrs)).isoformat(),
+            "delivery_deadline": (now + timedelta(hours=d_hrs)).isoformat(),
+            "contract_id": f"CON-{i}",
+            "required_material": "100% Combed Cotton Single Jersey 180 GSM",
+            "required_color": "Navy Blue #0A192F",
+            "required_fabric": "100% Combed Cotton Single Jersey 180 GSM",
+            "required_garment_type": "Men's Regular Fit",
+            "estimated_production_cost": round(qty * 7.5, 2),
+            "actual_production_cost": round(qty * 7.5, 2),
+            "deadline_status": "Safe" if d_hrs > 30 else "Approaching Deadline",
+            "progress_pct": 100 if o_status == "COMPLETED" else (45 if o_status == "RUNNING" else 0),
+            "current_stage": "Garmenting",
             "assigned_lane_id": lane,
             "created_at": (now - timedelta(days=random.randint(1, 5))).isoformat()
         }

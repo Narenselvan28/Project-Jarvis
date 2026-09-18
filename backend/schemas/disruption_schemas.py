@@ -10,6 +10,7 @@ class DisruptionTriggerSchema(BaseModel):
     order_id: Optional[str] = Field(default="ORD-1042", description="Target impacted order")
     failure_type: str = Field(default="MECHANICAL_FAILURE", description="Categorized failure reason")
     duration_hours: float = Field(default=6.0, gt=0, description="Expected downtime duration in hours")
+    reason: Optional[str] = Field(default="Unexpected mechanical failure", description="Failure reason description")
 
 class DisruptionApprovalSchema(BaseModel):
     option_id: str = Field(..., description="Recovery option: OPT-A, OPT-B, OPTION_A, or OPTION_B")

@@ -11,8 +11,18 @@ class OrderRepository(BaseRepository):
     def __init__(self):
         super().__init__("orders")
 
-    def get_all_orders(self) -> List[Dict[str, Any]]:
-        orders = self.find_all(sort=[("created_at", -1)])
+    def get_all_orders(self, status: Optional[str] = None, priority: Optional[str] = None) -> List[Dict[str, Any]]:
+        query = {}
+        if status and status != "All":
+            query["$or"] = [
+                {"status": status},
+                {"production_status": status},
+                {"erp_status": status}
+            ]
+        if priority and priority != "All":
+            query["priority"] = priority
+
+        orders = self.find_all(query, sort=[("created_at", -1)])
         op_coll = get_collection("order_operations")
         for o in orders:
             o["operations"] = list(op_coll.find({"order_id": o["id"]}, {"_id": 0}).sort("sequence", 1))

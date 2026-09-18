@@ -195,7 +195,14 @@ class MongoDBManager:
         """Drops all collections in the active database for clean demo seeding"""
         if self.db is not None:
             for cname in self.db.list_collection_names():
-                self.db[cname].drop()
+                if not cname.startswith("system."):
+                    try:
+                        self.db[cname].delete_many({})
+                    except Exception:
+                        try:
+                            self.db[cname].drop()
+                        except Exception:
+                            pass
             self._init_collections()
 
 # Global singleton instance
