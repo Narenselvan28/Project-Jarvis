@@ -4,12 +4,9 @@ import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import FactoryPage from "./pages/FactoryPage";
-import OrdersPage from "./pages/OrdersPage";
-import GanttPage from "./pages/GanttPage";
+import SupervisorReviewPage from "./pages/SupervisorReviewPage";
 import MaintenancePage from "./pages/MaintenancePage";
-import AnalyticsPage from "./pages/AnalyticsPage";
 import SimulationPage from "./pages/SimulationPage";
-import AuditLogPage from "./pages/AuditLogPage";
 import api from "./services/api";
 
 export default function App() {
@@ -23,7 +20,8 @@ export default function App() {
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
-        api.get("/auth/me")
+        api
+          .get("/auth/me")
           .then((res) => {
             if (res.data?.user) {
               setUser(res.data.user);
@@ -54,34 +52,38 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f8fafc",
-        color: "#0f172a",
-        fontFamily: "Inter, -apple-system, sans-serif"
-      }}>
-        <div style={{
-          width: "42px",
-          height: "42px",
-          borderRadius: "8px",
-          background: "#0f172a",
+      <div
+        style={{
+          minHeight: "100vh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          color: "#ffffff",
-          fontWeight: 800,
-          fontSize: "1.2rem",
-          marginBottom: "1rem"
-        }}>
-          RF
+          background: "#F9FAFB",
+          color: "#1F2937",
+          fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif"
+        }}
+      >
+        <div
+          style={{
+            width: "42px",
+            height: "42px",
+            borderRadius: "8px",
+            background: "#714B67",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ffffff",
+            fontWeight: 800,
+            fontSize: "1.2rem",
+            marginBottom: "1rem"
+          }}
+        >
+          <i className="fa-solid fa-industry"></i>
         </div>
-        <div style={{ fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>ReFlow</div>
-        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.25rem" }}>
-          Initializing Adaptive Production Intelligence...
+        <div style={{ fontSize: "1rem", fontWeight: 700, color: "#1F2937" }}>ReFlow</div>
+        <div style={{ fontSize: "0.8rem", color: "#6B7280", marginTop: "0.25rem" }}>
+          Initializing Adaptive Production Operations...
         </div>
       </div>
     );
@@ -92,26 +94,45 @@ export default function App() {
       <Routes>
         <Route
           path="/login"
-          element={user ? <Navigate to="/factory" replace /> : <LoginPage onLoginSuccess={(u) => setUser(u)} />}
+          element={
+            user ? <Navigate to="/factory" replace /> : <LoginPage onLoginSuccess={(u) => setUser(u)} />
+          }
         />
         <Route
           path="/signup"
-          element={user ? <Navigate to="/factory" replace /> : <SignupPage onSignupSuccess={(u) => setUser(u)} />}
+          element={
+            user ? <Navigate to="/factory" replace /> : <SignupPage onLoginSuccess={(u) => setUser(u)} />
+          }
         />
 
         {/* PROTECTED ENTERPRISE ROUTES IN REFLOW APP LAYOUT */}
-        <Route element={user ? <AppLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
+        <Route
+          element={
+            user ? <AppLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
+          }
+        >
+          {/* PRIMARY FACTORY FLOOR (Lanes & Orders views) */}
           <Route path="/factory" element={<FactoryPage user={user} />} />
-          <Route path="/orders" element={<OrdersPage user={user} />} />
-          <Route path="/orders/:orderId" element={<OrdersPage user={user} />} />
-          <Route path="/schedule" element={<GanttPage user={user} />} />
-          <Route path="/schedule/:orderId" element={<GanttPage user={user} />} />
-          <Route path="/orders/:orderId/gantt" element={<GanttPage user={user} />} />
+
+          {/* ORDERS REGISTRY (Redirects to unified Orders view on Factory Floor) */}
+          <Route path="/orders" element={<Navigate to="/factory?view=orders" replace />} />
+          <Route path="/orders/:orderId" element={<Navigate to="/factory?view=orders" replace />} />
+
+          {/* SUPERVISOR REVIEW (Meerpaarvai - Plan Approvals & Overrides) */}
+          <Route path="/supervisor" element={<SupervisorReviewPage user={user} />} />
+
+          {/* FLEET MAINTENANCE (Paramaippu - Work Orders & Machine Availability) */}
           <Route path="/maintenance" element={<MaintenancePage user={user} />} />
-          <Route path="/analytics" element={<AnalyticsPage user={user} />} />
+
+          {/* DISRUPTION SIMULATION SANDBOX (Ozhungu - What-if Modeling) */}
           <Route path="/simulation" element={<SimulationPage user={user} />} />
-          <Route path="/audit" element={<AuditLogPage user={user} />} />
-          <Route path="/audit-logs" element={<Navigate to="/audit" replace />} />
+
+          {/* LEGACY REDIRECTS */}
+          <Route path="/schedule" element={<Navigate to="/factory" replace />} />
+          <Route path="/schedule/:orderId" element={<Navigate to="/factory?view=orders" replace />} />
+          <Route path="/analytics" element={<Navigate to="/factory" replace />} />
+          <Route path="/audit" element={<Navigate to="/factory" replace />} />
+          <Route path="/audit-logs" element={<Navigate to="/factory" replace />} />
           <Route path="*" element={<Navigate to="/factory" replace />} />
         </Route>
       </Routes>

@@ -27,16 +27,45 @@ export default function FlowConnector({
     pathClass = "flow-path-active";
   }
 
+  // Mid-point coordinates for reassignment badge
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
+
   return (
     <g>
       {/* Background track line */}
       <path d={pathD} className="flow-path-base" />
 
       {/* Dynamic Animated flow line */}
-      <path
-        d={pathD}
-        className={pathClass}
-      />
+      <path d={pathD} className={pathClass} />
+
+      {/* Explicit RECOVERY badge on reassigned paths (Section 13) */}
+      {isReassigned && (
+        <g transform={`translate(${midX}, ${midY})`}>
+          <rect
+            x="-32"
+            y="-8"
+            width="64"
+            height="16"
+            rx="4"
+            fill="#2563EB"
+            stroke="#FFFFFF"
+            strokeWidth="1.5"
+            filter="drop-shadow(0 2px 4px rgba(37,99,235,0.25))"
+          />
+          <text
+            x="0"
+            y="3.5"
+            fill="#FFFFFF"
+            fontSize="7.5"
+            fontWeight="800"
+            fontFamily="Inter, sans-serif"
+            textAnchor="middle"
+          >
+            ↳ RECOVERY
+          </text>
+        </g>
+      )}
     </g>
   );
 }

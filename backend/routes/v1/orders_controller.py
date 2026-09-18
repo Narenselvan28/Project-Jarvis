@@ -84,6 +84,25 @@ def generate_order_plan():
     )
     return make_success(plan, meta={"status": "PENDING_SUPERVISOR_APPROVAL"})
 
+@orders_v1_bp.route("/orders/plans", methods=["GET"])
+def list_order_plans():
+    from backend.database.mongo import get_collection
+    plans = list(get_collection("planning_plans").find({}, {"_id": 0}).sort("created_at", -1))
+    return make_success(plans, meta={"total_plans": len(plans)})
+
+@orders_v1_bp.route("/orders/plan/<string:plan_id>/validate", methods=["POST"])
+@role_required("SUPERVISOR", "MANAGER")
+def validate_order_plan(plan_id):
+    from backend.optimization.scheduler import production_scheduler
+    from backend.database.mongo import get_collection
+    raw_data = request.get_json() or {}
+    operations = raw_data.get("operations")
+    if not operations:
+        plan = get_collection("planning_plans").find_one({"id": plan_id}, {"_id": 0})
+        operations = plan.get("operations", []) if plan else []
+    validation = production_scheduler.validate_plan(operations)
+    return make_success(validation)
+
 @orders_v1_bp.route("/orders/plan/<string:plan_id>/approve", methods=["POST"])
 @role_required("SUPERVISOR", "MANAGER")
 def approve_order_plan(plan_id):
@@ -116,3 +135,4 @@ def reject_order_plan(plan_id):
         {"$set": {"status": "REJECTED", "rejection_reason": reason}}
     )
     return make_success({"status": "REJECTED", "plan_id": plan_id, "reason": reason})
+

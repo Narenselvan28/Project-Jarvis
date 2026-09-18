@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import api from "../services/api";
 import { socketService } from "../services/socket";
-import LanesView from "../components/LanesView";
+import FactoryMap from "../components/FactoryMap";
 import OrderView from "../components/OrderView";
 import MachineDetailModal from "../components/MachineDetailModal";
 import OrderDetailsModal from "../components/OrderDetailsModal";
@@ -16,7 +16,7 @@ export default function FactoryPage({ user }) {
   const [showDisruptionModal, setShowDisruptionModal] = useState(false);
   const [disruptionTargetMachine, setDisruptionTargetMachine] = useState("CUT-02");
   const [recentEvents, setRecentEvents] = useState([
-    { id: 1, time: "10:42", text: "Production line active across 3 parallel lanes.", type: "info" }
+    { id: 1, time: "10:42", text: "Production floor active across 3 parallel continuous flow lanes.", type: "info" }
   ]);
 
   const loadFactoryData = useCallback(async () => {
@@ -25,7 +25,7 @@ export default function FactoryPage({ user }) {
       const payload = res.data?.data || res.data;
       setFactoryData(payload);
     } catch (err) {
-      console.error("Error loading factory overview:", err);
+      console.error("Error loading factory floor overview:", err);
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ export default function FactoryPage({ user }) {
   useEffect(() => {
     loadFactoryData();
 
-    // Connect Socket.IO for live shopfloor updates (Section 35)
+    // Real-time shopfloor updates via Socket.IO
     socketService.connect();
 
     const addEvent = (text, type = "info") => {
@@ -49,7 +49,7 @@ export default function FactoryPage({ user }) {
     });
 
     socketService.on("machine_failed", (data) => {
-      addEvent(`ALERT: Machine ${data.machine_id} FAILED (${data.failure_type}) - ${data.affected_orders_count} orders impacted`, "danger");
+      addEvent(`ALERT: Machine ${data.machine_id} FAILED (${data.failure_type}) - ${data.affected_orders_count || 1} orders impacted`, "danger");
       loadFactoryData();
     });
 
@@ -59,7 +59,7 @@ export default function FactoryPage({ user }) {
     });
 
     socketService.on("schedule_updated", () => {
-      addEvent("Schedule re-assigned by Google OR-Tools CP-SAT engine", "success");
+      addEvent("Production plan re-assigned by OR-Tools CP-SAT scheduler", "success");
       loadFactoryData();
     });
 
@@ -84,29 +84,38 @@ export default function FactoryPage({ user }) {
 
   const handleInspectMachineById = (machId) => {
     const m = (factoryData?.machines || []).find((item) => item.id === machId);
-    if (m) {
-      setSelectedMachine(m);
-    }
+    if (m) setSelectedMachine(m);
   };
 
   const machines = factoryData?.machines || [];
-  const lanes = factoryData?.lanes || [];
-  const processes = factoryData?.processes || [];
+  const rawLanes = factoryData?.lanes || [];
   const activeOrders = factoryData?.active_orders || [];
   const activeDisruptions = factoryData?.active_disruptions || [];
 
+  // Group machines into each lane for circular map sequential connectors
+  const lanesWithMachines = useMemo(() => {
+    return rawLanes.map((lane) => {
+      const laneMachs = machines.filter((m) => m.lane_id === lane.id);
+      laneMachs.sort((a, b) => (a.grid_column || a.sequence_index || 1) - (b.grid_column || b.sequence_index || 1));
+      return {
+        ...lane,
+        machines: laneMachs
+      };
+    });
+  }, [rawLanes, machines]);
+
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-[#F8FAFC]">
-      {/* FACTORY HEADER & VIEW TOGGLE (Section 11) */}
-      <div className="h-14 bg-white border-b border-[#E2E8F0] px-6 flex items-center justify-between shrink-0">
-        {/* VIEW 1 / VIEW 2 TAB SWITCHER */}
+    <div className="flex flex-col h-full w-full overflow-hidden bg-bgMain antialiased">
+      {/* FACTORY HEADER & VIEW SWITCHER (Sections 5 & 6) */}
+      <div className="h-14 bg-white border-b border-borderCol px-6 flex items-center justify-between shrink-0">
+        {/* VIEW SWITCHER: [ LANES ] [ ORDERS ] */}
         <div className="view-toggle-container">
           <button
             onClick={() => setActiveView("LANES")}
             className={`view-toggle-btn ${activeView === "LANES" ? "active" : ""}`}
           >
             <i className="fa-solid fa-network-wired text-xs"></i>
-            <span>LANES VIEW (Iyandhiram / Flow)</span>
+            <span>Lanes (Iyandhirangal)</span>
           </button>
 
           <button
@@ -114,53 +123,62 @@ export default function FactoryPage({ user }) {
             className={`view-toggle-btn ${activeView === "ORDERS" ? "active" : ""}`}
           >
             <i className="fa-solid fa-boxes-stacked text-xs"></i>
-            <span>ORDER VIEW (Aanaigal / Operations)</span>
+            <span>Orders (Aanaigal)</span>
           </button>
         </div>
 
-        {/* Quick Disruption Action Button (Available to Manager) */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleSimulateDisruptionClick(null)}
-            className="px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
-          >
-            <i className="fa-solid fa-triangle-exclamation text-xs"></i>
-            <span>Simulate Disruption</span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-200"></div>
-
-          <div className="text-xs text-slate-500 font-mono hidden md:flex items-center gap-3">
+        {/* MINIMAL FACTORY OPERATIONAL SUMMARY (Section 7) */}
+        <div className="flex items-center gap-4">
+          <div className="text-xs text-textSub font-mono hidden md:flex items-center gap-3">
+            <span>
+              Machines: <strong className="text-textMain">{machines.length}</strong>
+            </span>
             <span>
               Running: <strong className="text-emerald-700">{factoryData?.running_count || 0}</strong>
             </span>
             <span>
-              Failed: <strong className={factoryData?.failed_count > 0 ? "text-red-700 font-bold" : "text-slate-700"}>{factoryData?.failed_count || 0}</strong>
+              Faulted: <strong className={factoryData?.failed_count > 0 ? "text-critical font-bold" : "text-textSub"}>{factoryData?.failed_count || 0}</strong>
             </span>
             <span>
-              Disruptions: <strong className={activeDisruptions.length > 0 ? "text-red-700 font-bold" : "text-slate-700"}>{activeDisruptions.length}</strong>
+              Active Orders: <strong className="text-primary font-bold">{activeOrders.length}</strong>
+            </span>
+            <span>
+              Disruptions: <strong className={activeDisruptions.length > 0 ? "text-critical font-bold" : "text-textSub"}>{activeDisruptions.length}</strong>
             </span>
           </div>
+
+          <div className="h-4 w-px bg-borderCol hidden md:block"></div>
+
+          {/* Quick Disruption Action */}
+          <button
+            onClick={() => handleSimulateDisruptionClick(null)}
+            className="px-3 py-1.5 bg-criticalLight hover:bg-critical hover:text-white text-critical border border-rose-200 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm"
+          >
+            <i className="fa-solid fa-triangle-exclamation text-xs"></i>
+            <span>Simulate Disruption</span>
+          </button>
         </div>
       </div>
 
-      {/* MAIN VIEW CONTENT */}
+      {/* PRIMARY FACTORY CONTENT */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
         {loading && !factoryData ? (
-          <div className="py-16 text-center text-xs text-[#64748B] font-mono">
+          <div className="py-16 text-center text-xs text-textSub font-mono">
             <i className="fa-solid fa-spinner fa-spin mr-2"></i>
-            Initializing 2D Factory Operations Engine...
+            Loading manufacturing shopfloor network...
           </div>
         ) : activeView === "LANES" ? (
-          /* VIEW 1: LANES VIEW (Deterministic Grid) */
-          <LanesView
-            lanes={lanes}
-            processes={processes}
+          /* VIEW 1: CIRCULAR FACTORY MACHINE MAP (Section 4 & 5) */
+          <FactoryMap
+            lanes={lanesWithMachines}
             machines={machines}
+            activeOrders={activeOrders}
+            selectedMachine={selectedMachine}
             onSelectMachine={(m) => setSelectedMachine(m)}
+            onSelectOrder={(ordId) => setInspectOrderId(ordId)}
           />
         ) : (
-          /* VIEW 2: ORDER VIEW (Order-Centric Operations) */
+          /* VIEW 2: ORDER VIEW (Section 5 & 8) */
           <OrderView
             orders={activeOrders}
             onSelectOrder={(ordId) => setInspectOrderId(ordId)}
@@ -168,27 +186,27 @@ export default function FactoryPage({ user }) {
         )}
       </div>
 
-      {/* BOTTOM OPERATIONAL TIMELINE TRAY */}
+      {/* BOTTOM OPERATIONAL TELEMETRY BAR */}
       <div className="factory-bottom-tray">
         <div className="bottom-tray-header">
-          <span>LIVE TELEMETRY & DISRUPTION AUDIT TIMELINE</span>
-          <span className="font-mono text-[11px] text-slate-500">
-            Total Machines: {machines.length} • Active Jobs: {activeOrders.length}
+          <span>Real-Time Disruption & Telemetry Audit Feed</span>
+          <span className="font-mono text-[10px] text-textSub">
+            Fleet: {machines.length} Units • Active Orders: {activeOrders.length}
           </span>
         </div>
 
         <div className="bottom-tray-content">
           {recentEvents.map((evt) => (
             <div key={evt.id} className="event-ticker-item">
-              <span className="font-mono text-[10px] text-slate-400">[{evt.time}]</span>
+              <span className="font-mono text-[10px] text-textSub">[{evt.time}]</span>
               <span className={`font-semibold ${
                 evt.type === "danger"
-                  ? "text-red-700"
+                  ? "text-critical"
                   : evt.type === "success"
                   ? "text-emerald-700"
                   : evt.type === "warning"
                   ? "text-amber-700"
-                  : "text-slate-700"
+                  : "text-textMain"
               }`}>
                 {evt.text}
               </span>
@@ -197,7 +215,7 @@ export default function FactoryPage({ user }) {
         </div>
       </div>
 
-      {/* MACHINE DETAIL FLOATING MODAL (Section 16: ONLY machine modal, no side drawer) */}
+      {/* MACHINE DETAIL MODAL (Section 14: ONLY Machine modal, no permanent side panel) */}
       {selectedMachine && (
         <MachineDetailModal
           machine={selectedMachine}
@@ -207,7 +225,7 @@ export default function FactoryPage({ user }) {
         />
       )}
 
-      {/* ORDER DETAILS ROUTE MODAL (Section 18, 19, 20, 21) */}
+      {/* ORDER DETAILS MODAL (Sections 9 & 10) */}
       {inspectOrderId && (
         <OrderDetailsModal
           orderId={inspectOrderId}
@@ -216,11 +234,11 @@ export default function FactoryPage({ user }) {
         />
       )}
 
-      {/* DISRUPTION & RECOVERY MODAL (Section 31 & 32: Option A vs Option B) */}
+      {/* DISRUPTION & RECOVERY MODAL (Sections 32, 33, 34) */}
       {showDisruptionModal && (
         <DisruptionModal
           machines={machines}
-          lanes={lanes}
+          lanes={rawLanes}
           defaultMachineId={disruptionTargetMachine}
           onClose={() => setShowDisruptionModal(false)}
           onSuccess={() => {

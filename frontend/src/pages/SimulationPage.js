@@ -45,7 +45,7 @@ export default function SimulationPage() {
         failure_type: failureType,
         duration_hours: durationHours
       });
-      setAppliedMsg("Simulation successfully committed to live shopfloor state!");
+      setAppliedMsg("Simulation successfully committed to live shopfloor state.");
       setSimResult(null);
     } catch (err) {
       console.error(err);
@@ -59,44 +59,47 @@ export default function SimulationPage() {
   const optB = simResult?.option_b;
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F8FAFC] antialiased">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-bgMain antialiased selection:bg-primaryLight selection:text-primary">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-[#0F172A] tracking-tight flex items-center gap-2">
-          <span>Ozhungu / What-If Disruption Simulation Sandbox</span>
+        <h1 className="text-xl font-bold text-textMain tracking-tight flex items-center gap-2">
+          <span>Ozhungu</span>
+          <span className="text-xs font-normal text-textSub border-l border-borderCol pl-2">
+            Disruption Simulation Sandbox
+          </span>
         </h1>
-        <p className="text-xs text-[#64748B] mt-0.5">
-          Model hypothetical machine disruptions, predict delivery bottlenecks, and test OR-Tools recovery alternatives without altering live production state
+        <p className="text-xs text-textSub mt-0.5">
+          Model machine disruptions and evaluate OR-Tools recovery alternatives without altering active floor schedule.
         </p>
       </div>
 
       {appliedMsg && (
-        <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-semibold flex items-center gap-2">
+        <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-md text-xs font-semibold flex items-center gap-2 shadow-soft">
           <i className="fa-solid fa-circle-check text-sm"></i>
           <span>{appliedMsg}</span>
         </div>
       )}
 
       {/* Simulator Parameters Panel */}
-      <div className="p-5 bg-white border border-[#E2E8F0] rounded-xl shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Non-Destructive Simulation Controls
+      <div className="p-5 bg-white border border-borderCol rounded-lg shadow-soft space-y-4">
+        <div className="flex items-center justify-between border-b border-borderCol pb-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-textMain">
+            Simulation Parameters
           </span>
-          <span className="text-[10px] bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-mono font-bold">
-            Snapshot Mode Active
+          <span className="text-[10px] bg-primaryLight text-primary border border-primary/20 px-2 py-0.5 rounded font-mono font-semibold">
+            Isolated Snapshot
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Hypothetical Workstation
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-textSub mb-1">
+              Workstation
             </label>
             <select
               value={targetMachineId}
               onChange={(e) => setTargetMachineId(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none font-mono"
+              className="w-full px-3 py-2 text-xs bg-white border border-borderCol rounded-md focus:outline-none focus:border-primary font-mono text-textMain"
             >
               {machines.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -107,13 +110,13 @@ export default function SimulationPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Simulated Failure Scenario
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-textSub mb-1">
+              Failure Type
             </label>
             <select
               value={failureType}
               onChange={(e) => setFailureType(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none"
+              className="w-full px-3 py-2 text-xs bg-white border border-borderCol rounded-md focus:outline-none focus:border-primary text-textMain"
             >
               <option value="Mechanical Bearing Failure">Mechanical Bearing Failure</option>
               <option value="Overheating & Coolant Failure">Overheating & Coolant Failure</option>
@@ -124,10 +127,10 @@ export default function SimulationPage() {
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-textSub">
                 Duration
               </label>
-              <span className="text-xs font-mono font-bold text-slate-900">{durationHours} Hours</span>
+              <span className="text-xs font-mono font-bold text-textMain">{durationHours} Hours</span>
             </div>
             <input
               type="range"
@@ -136,7 +139,7 @@ export default function SimulationPage() {
               step="0.5"
               value={durationHours}
               onChange={(e) => setDurationHours(parseFloat(e.target.value))}
-              className="w-full accent-slate-800"
+              className="w-full accent-primary"
             />
           </div>
         </div>
@@ -145,12 +148,12 @@ export default function SimulationPage() {
           <button
             onClick={runSimulation}
             disabled={loading}
-            className="px-5 py-2.5 bg-[#1E293B] hover:bg-[#0F172A] text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+            className="px-5 py-2 bg-primary hover:bg-[#5E3D55] text-white text-xs font-semibold rounded-md flex items-center gap-2 shadow-soft transition-all disabled:opacity-50"
           >
             {loading ? (
               <>
                 <i className="fa-solid fa-spinner fa-spin text-xs"></i>
-                <span>Evaluating Sandbox Scenario...</span>
+                <span>Evaluating Scenario...</span>
               </>
             ) : (
               <>
@@ -164,82 +167,82 @@ export default function SimulationPage() {
 
       {/* Simulation Results (Side-by-side Option A vs Option B) */}
       {simResult && (
-        <div className="p-5 bg-white border border-[#E2E8F0] rounded-xl shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+        <div className="p-5 bg-white border border-borderCol rounded-lg shadow-soft space-y-4">
+          <div className="flex items-center justify-between border-b border-borderCol pb-3">
             <div>
-              <span className="text-xs font-bold text-slate-800">
-                Simulated Disruption Impact on {simResult.target_machine || targetMachineId}
+              <span className="text-xs font-bold text-textMain">
+                Simulated Impact: {simResult.target_machine || targetMachineId}
               </span>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Identified {simResult.affected_orders_count || 1} impacted order(s). Generated 2 feasible recovery alternatives via CP-SAT.
+              <p className="text-[11px] text-textSub mt-0.5">
+                Impacted {simResult.affected_orders_count || 1} order(s). Generated 2 recovery options via OR-Tools CP-SAT.
               </p>
             </div>
 
             <button
               onClick={applyToProduction}
               disabled={applying}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+              className="px-4 py-2 bg-critical hover:bg-rose-700 text-white rounded-md text-xs font-semibold flex items-center gap-2 shadow-soft transition-all"
             >
-              {applying ? "Applying to Live Floor..." : "Apply Failure to Live Production"}
+              {applying ? "Applying to Floor..." : "Apply Failure to Live Floor"}
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* OPTION A */}
-            <div className="p-4 border-2 border-blue-400 rounded-xl bg-blue-50/30 space-y-3">
+            <div className="p-4 border-2 border-primary/40 rounded-lg bg-primaryLight/30 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-blue-900">
+                <span className="text-xs font-bold text-primary">
                   OPTION A: DEADLINE PROTECTION
                 </span>
-                <span className="text-[10px] font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">
-                  Zero Tardiness
+                <span className="text-[10px] font-mono bg-white text-primary border border-primary/20 px-2 py-0.5 rounded font-bold">
+                  Zero Delay
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs bg-white p-3 rounded-lg border border-blue-200">
+              <div className="grid grid-cols-2 gap-2 text-xs bg-white p-3 rounded-md border border-borderCol">
                 <div>
-                  <span className="text-[10px] text-slate-500">Reassigned Machine:</span>
-                  <div className="font-bold text-blue-900 font-mono">{optA?.machine || "CUT-01"}</div>
+                  <span className="text-[10px] text-textSub">Reassigned Machine:</span>
+                  <div className="font-bold text-primary font-mono">{optA?.machine || "CUT-01"}</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500">Processing Time:</span>
-                  <div className="font-bold text-slate-800 font-mono">{optA?.predicted_processing_min || 95} min</div>
+                  <span className="text-[10px] text-textSub">Predicted Time:</span>
+                  <div className="font-bold text-textMain font-mono">{optA?.predicted_processing_min || 95} min</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500">Overtime Cost:</span>
-                  <div className="font-bold text-slate-800 font-mono">₹{(optA?.additional_cost || 1240).toLocaleString()}</div>
+                  <span className="text-[10px] text-textSub">Overtime Cost:</span>
+                  <div className="font-bold text-textMain font-mono">₹{(optA?.additional_cost || 1240).toLocaleString()}</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500">Delivery Delay:</span>
+                  <span className="text-[10px] text-textSub">Delivery Delay:</span>
                   <div className="font-bold text-emerald-700 font-mono">0 min</div>
                 </div>
               </div>
             </div>
 
             {/* OPTION B */}
-            <div className="p-4 border border-slate-300 rounded-xl bg-white space-y-3">
+            <div className="p-4 border border-borderCol rounded-lg bg-white space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-800">
-                  OPTION B: COST & STABILITY
+                <span className="text-xs font-bold text-textMain">
+                  OPTION B: COST MINIMIZATION
                 </span>
-                <span className="text-[10px] font-mono bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">
-                  Minimal Cost
+                <span className="text-[10px] font-mono bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-bold">
+                  Lowest Cost
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-2 gap-2 text-xs bg-bgMain p-3 rounded-md border border-borderCol">
                 <div>
-                  <span className="text-[10px] text-slate-500">Reassigned Machine:</span>
-                  <div className="font-bold text-slate-900 font-mono">{optB?.machine || "CUT-01"}</div>
+                  <span className="text-[10px] text-textSub">Reassigned Machine:</span>
+                  <div className="font-bold text-textMain font-mono">{optB?.machine || "CUT-01"}</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500">Processing Time:</span>
-                  <div className="font-bold text-slate-800 font-mono">{optB?.predicted_processing_min || 105} min</div>
+                  <span className="text-[10px] text-textSub">Predicted Time:</span>
+                  <div className="font-bold text-textMain font-mono">{optB?.predicted_processing_min || 105} min</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500">Overtime Cost:</span>
+                  <span className="text-[10px] text-textSub">Overtime Cost:</span>
                   <div className="font-bold text-emerald-700 font-mono">₹{(optB?.additional_cost || 680).toLocaleString()}</div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500">Delivery Delay:</span>
+                  <span className="text-[10px] text-textSub">Delivery Delay:</span>
                   <div className="font-bold text-amber-700 font-mono">+25 min</div>
                 </div>
               </div>

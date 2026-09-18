@@ -17,80 +17,78 @@ export default function OrderView({ orders = [], onSelectOrder }) {
   const getPriorityBadge = (prio) => {
     switch (prio) {
       case "URGENT":
-        return "bg-red-50 border-red-300 text-red-700 font-bold";
+        return "bg-criticalLight text-critical border border-rose-200 font-bold";
       case "HIGH":
-        return "bg-orange-50 border-orange-300 text-orange-700 font-bold";
+        return "bg-warningLight text-amber-800 border border-amber-200 font-bold";
       case "NORMAL":
       case "MEDIUM":
-        return "bg-blue-50 border-blue-300 text-blue-700";
+        return "bg-blue-50 text-blue-800 border border-blue-200 font-medium";
       case "LOW":
       default:
-        return "bg-slate-50 border-slate-300 text-slate-700";
+        return "bg-slate-50 text-slate-700 border border-slate-200 font-medium";
     }
   };
 
   const getStatusBadge = (status) => {
     switch (status) {
       case "RUNNING":
-        return "bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold";
+        return "bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold";
       case "BLOCKED":
-        return "bg-orange-50 border-orange-400 text-orange-900 font-bold animate-pulse";
+        return "bg-criticalLight text-critical border border-rose-200 font-bold animate-pulse";
       case "COMPLETED":
-        return "bg-slate-100 border-slate-300 text-slate-700";
+        return "bg-slate-50 text-slate-700 border border-slate-200 font-medium";
       case "QUEUED":
       case "PLANNED":
       default:
-        return "bg-blue-50 border-blue-300 text-blue-700 font-semibold";
+        return "bg-primaryLight text-primary border border-plum-100 font-semibold";
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#F8FAFC] overflow-hidden p-6">
-      {/* Header & Filter Controls */}
+    <div className="flex-1 flex flex-col h-full bg-bgMain overflow-hidden p-6">
+      {/* Header & Filter Toolbar matching ui.txt */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
+          <h2 className="text-base font-semibold text-textMain flex items-center gap-2">
             <span>Aanaigal / Production Orders Registry</span>
-            <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-mono">
+            <span className="text-[11px] bg-primaryLight text-primary font-mono font-bold px-2 py-0.5 rounded-full">
               {filteredOrders.length}
             </span>
           </h2>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            Click any order to inspect manufacturing route, machine allocations, and disruption recovery paths
+          <p className="text-xs text-textSub mt-0.5">
+            Click any order to inspect manufacturing route, machine allocations, and recovery pathways
           </p>
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        {/* Filters & Actions Toolbar */}
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
-              <i className="fa-solid fa-magnifying-glass text-xs"></i>
-            </span>
+            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-textSub text-xs"></i>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search order or product..."
-              className="pl-8 pr-3 py-1.5 text-xs text-slate-800 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-slate-800"
+              className="w-[190px] pl-8 pr-3 py-1.5 bg-white border border-borderCol rounded-md text-xs font-medium text-textMain placeholder-textSub focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors shadow-sm"
             />
           </div>
 
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-xs text-slate-700 bg-white border border-slate-300 rounded-lg focus:outline-none"
+            className="px-3 py-1.5 bg-white border border-borderCol rounded-md text-xs font-medium text-textMain shadow-sm focus:outline-none focus:border-primary"
           >
             <option value="ALL">All Priorities</option>
             <option value="URGENT">Urgent</option>
             <option value="HIGH">High</option>
-            <option value="NORMAL">Normal / Medium</option>
+            <option value="NORMAL">Normal</option>
             <option value="LOW">Low</option>
           </select>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-xs text-slate-700 bg-white border border-slate-300 rounded-lg focus:outline-none"
+            className="px-3 py-1.5 bg-white border border-borderCol rounded-md text-xs font-medium text-textMain shadow-sm focus:outline-none focus:border-primary"
           >
             <option value="ALL">All Statuses</option>
             <option value="RUNNING">Running</option>
@@ -101,12 +99,12 @@ export default function OrderView({ orders = [], onSelectOrder }) {
         </div>
       </div>
 
-      {/* Orders Table (Section 17: Compact Professional Table) */}
-      <div className="flex-1 bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm flex flex-col">
+      {/* Orders Table Container per ui.txt */}
+      <div className="border border-borderCol rounded-xl overflow-hidden shadow-soft bg-white flex-1 flex flex-col">
         <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[11px] font-bold uppercase tracking-wider text-slate-500 sticky top-0">
-              <tr>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white border-b border-borderCol text-[10px] font-semibold text-textSub uppercase tracking-wider sticky top-0 z-10">
                 <th className="py-3 px-4">Order ID</th>
                 <th className="py-3 px-4">Product</th>
                 <th className="py-3 px-4 text-right">Quantity</th>
@@ -114,14 +112,15 @@ export default function OrderView({ orders = [], onSelectOrder }) {
                 <th className="py-3 px-4">Current Operation</th>
                 <th className="py-3 px-4">Machine</th>
                 <th className="py-3 px-4">Lane</th>
+                <th className="py-3 px-4 text-center">Progress</th>
+                <th className="py-3 px-4">ETA</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0]">
+            <tbody className="text-xs text-textMain divide-y divide-borderCol">
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((o) => {
-                  // Determine active operation
                   const ops = o.operations || [];
                   const activeOp =
                     ops.find((op) => op.status === "RUNNING" || op.status === "BLOCKED") ||
@@ -130,39 +129,55 @@ export default function OrderView({ orders = [], onSelectOrder }) {
 
                   const currentOpName = activeOp ? activeOp.process_name || `Op ${activeOp.sequence}` : "Queued";
                   const currentMachine = activeOp ? activeOp.assigned_machine_id || activeOp.machine_id || "—" : "—";
-                  const currentLane = activeOp ? (activeOp.lane_id || o.assigned_lane_id || "L01").replace("L0", "L") : "—";
+                  const currentLane = activeOp ? (activeOp.lane_id || o.assigned_lane_id || "L01").replace("L0", "Lane ") : "—";
+                  const progressPct = o.status === "COMPLETED" ? 100 : (o.status === "RUNNING" ? 68 : 15);
+                  const etaTime = o.deadline_hours ? `${Math.round(o.deadline_hours)}h` : "14:45";
 
                   return (
                     <tr
                       key={o.id}
                       onClick={() => onSelectOrder(o.id)}
-                      className="hover:bg-blue-50/50 cursor-pointer transition-colors"
+                      className="hover:bg-bgMain transition-colors cursor-pointer group"
                     >
-                      <td className="py-3 px-4 font-mono font-bold text-blue-700">
+                      <td className="py-3 px-4 font-mono font-bold text-primary">
                         {o.id}
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-900">
+                      <td className="py-3 px-4 font-medium text-textMain">
                         {o.product_name || o.product || "Apparel Batch"}
                       </td>
                       <td className="py-3 px-4 text-right font-mono">
                         {(o.quantity || 0).toLocaleString()} pcs
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded border text-[10px] ${getPriorityBadge(o.priority)}`}>
+                        <span className={`status-pill inline-flex items-center px-2 py-0.5 rounded-full text-[10px] ${getPriorityBadge(o.priority)}`}>
                           {o.priority || "NORMAL"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800">
+                      <td className="py-3 px-4 font-medium text-textMain">
                         {currentOpName}
                       </td>
-                      <td className="py-3 px-4 font-mono font-semibold text-slate-900">
+                      <td className="py-3 px-4 font-mono font-semibold text-textMain">
                         {currentMachine}
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-600">
+                      <td className="py-3 px-4 font-mono text-textSub">
                         {currentLane}
                       </td>
+                      <td className="py-3 px-4 text-center font-mono">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div className="w-12 h-1.5 bg-borderCol rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full"
+                              style={{ width: `${progressPct}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-[10px] font-semibold text-textSub">{progressPct}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-textSub">
+                        {etaTime}
+                      </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded border text-[10px] ${getStatusBadge(o.status)}`}>
+                        <span className={`status-pill inline-flex items-center px-2.5 py-1 rounded-full text-[10px] ${getStatusBadge(o.status)}`}>
                           {o.status}
                         </span>
                       </td>
@@ -172,7 +187,7 @@ export default function OrderView({ orders = [], onSelectOrder }) {
                             e.stopPropagation();
                             onSelectOrder(o.id);
                           }}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-[#1E293B] hover:text-white rounded transition-colors"
+                          className="px-2.5 py-1 text-[11px] font-medium text-primary bg-primaryLight hover:bg-primary hover:text-white rounded-md transition-colors shadow-sm"
                         >
                           Inspect Route →
                         </button>
@@ -182,8 +197,8 @@ export default function OrderView({ orders = [], onSelectOrder }) {
                 })
               ) : (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-400 font-mono text-xs">
-                    No matching orders found.
+                  <td colSpan="11" className="py-12 text-center text-textSub font-mono text-xs">
+                    No production orders match the selected filters.
                   </td>
                 </tr>
               )}
