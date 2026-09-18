@@ -586,3 +586,11 @@ Open [http://localhost:3000](http://localhost:3000) in a web browser.
 | **Plant Manager** (*Nirvagam*) | `manager` | `password123` | Full plant authority, order creation, disruption recovery approval |
 | **Floor Supervisor** (*Meerpaarvai*) | `supervisor` | `password123` | Floor oversight, production plan review, schedule validation |
 | **Service Technician** (*Paramaippu*) | `service` | `password123` | Fleet maintenance queue, work orders, repair verification |
+
+
+/////Roles of every Individual/////
+MEMBER 1- INDIRESH KUMAR R ---------> TEAM LEAD AND FRONTEND DESIGNER 
+MEMBER 2- NAREN SELVAN T  ----------> ML DEVELOPER 
+MEMBER 3- SHANMUGA PRIYA K P ------->UI DESIGNER AND RESEARCHER
+MEMBER 4- GOWSHIC S S --------------> BACKEND DEVELOPER.
+
