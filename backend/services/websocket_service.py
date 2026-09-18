@@ -8,6 +8,10 @@ class WebSocketService:
         except Exception as e:
             print(f"[WebSocket] Emit error ({event_name}): {e}")
 
+    @classmethod
+    def emit(cls, event_name, data):
+        cls.emit_event(event_name, data)
+
     @staticmethod
     def notify_machine_status_changed(machine_dict):
         WebSocketService.emit_event("machine_status_changed", machine_dict)

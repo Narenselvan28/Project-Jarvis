@@ -14,10 +14,11 @@ export default function Navigation({ user, onLogout }) {
 
   const navItems = [
     { label: "Factory Flow", path: "/factory" },
-    { label: "Schedules", path: "/schedules" },
+    { label: "Order Gantt", path: "/gantt" },
+    { label: "New Order Planning", path: "/planning" },
+    { label: "Supervisor Plans", path: "/supervisor/plans" },
     { label: "Maintenance", path: "/maintenance" },
     { label: "Analytics", path: "/analytics" },
-    { label: "What-If Simulation", path: "/simulation" },
     { label: "Audit Logs", path: "/audit-logs" }
   ];
 
@@ -27,7 +28,7 @@ export default function Navigation({ user, onLogout }) {
         <div className="brand-logo-icon">APS</div>
         <div>
           <div className="brand-title">Adaptive Factory Platform</div>
-          <div className="brand-subtitle">Autonomous Scheduling & Disruption Recovery</div>
+          <div className="brand-subtitle">AI-Assisted Production Planning &amp; Disruption Recovery</div>
         </div>
       </div>
 
@@ -36,7 +37,7 @@ export default function Navigation({ user, onLogout }) {
           <Link
             key={item.path}
             to={item.path}
-            className={`nav-item ${location.pathname === item.path ? "active" : ""}`}
+            className={`nav-item ${location.pathname.startsWith(item.path) ? "active" : ""}`}
           >
             {item.label}
           </Link>

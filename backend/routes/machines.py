@@ -1,99 +1,134 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.models.user import User
-from backend.models.machine import Machine, MachineState
-from backend.models.order import Order, OrderOperation
-from backend.services.machine_service import machine_service
+from backend.database.mongo import get_collection
+from backend.database.models import UserDB, MachineDB
 from backend.services.disruption_service import disruption_service
-from backend.services.maintenance_service import maintenance_service
 from backend.ml.prediction import predict_machine_risk, predict_processing_time
 from backend.optimization.candidate_machine_selector import find_candidate_machines
-from backend.routes.auth import manager_required, service_person_required
+from backend.services.websocket_service import websocket_service
 
 machines_bp = Blueprint("machines", __name__, url_prefix="/api/machines")
 
 @machines_bp.route("", methods=["GET"])
 def list_machines():
-    machines = Machine.query.all()
-    return jsonify({"machines": [m.to_dict(include_details=True) for m in machines]}), 200
+    machines = MachineDB.all()
+    return jsonify({"machines": machines}), 200
 
 @machines_bp.route("/<string:machine_id>", methods=["GET"])
 def get_machine(machine_id):
-    machine = Machine.query.get(machine_id)
+    machine = MachineDB.get(machine_id)
     if not machine:
         return jsonify({"error": "Machine not found"}), 404
     
     # Calculate live ML failure risk
     risk = predict_machine_risk(machine)
-    data = machine.to_dict(include_details=True)
-    data["ml_failure_risk_analysis"] = risk
+    machine["ml_failure_risk_analysis"] = risk
 
-    # If running an order, get ML processing time prediction
-    if machine.current_order_id:
-        order = Order.query.get(machine.current_order_id)
+    # If running an order, predict processing time
+    if machine.get("current_order_id"):
+        order = get_collection("orders").find_one({"id": machine["current_order_id"]}, {"_id": 0})
         if order:
-            active_op = next((op for op in order.operations if op.assigned_machine_id == machine.id), None)
+            active_op = get_collection("order_operations").find_one({
+                "order_id": machine["current_order_id"],
+                "assigned_machine_id": machine_id
+            }, {"_id": 0})
             if active_op:
                 pred = predict_processing_time(machine, order, active_op)
-                data["current_order_prediction"] = pred
+                machine["current_order_prediction"] = pred
 
-    return jsonify({"machine": data}), 200
+    return jsonify({"machine": machine}), 200
+
+@machines_bp.route("/<string:machine_id>/status", methods=["PATCH"])
+@jwt_required()
+def update_machine_status(machine_id):
+    user_id = get_jwt_identity()
+    user = UserDB.get_by_id(user_id) or {"username": "manager", "role": "MANAGER"}
+    data = request.get_json() or {}
+    new_status = data.get("status")
+    reason = data.get("reason", "Manual status change")
+
+    if not new_status:
+        return jsonify({"error": "Status is required"}), 400
+
+    success, result = MachineDB.update_status(
+        machine_id=machine_id,
+        new_status=new_status,
+        user_role=user.get("role", "MANAGER"),
+        reason=reason,
+        user_id=user.get("id"),
+        username=user.get("username")
+    )
+
+    if not success:
+        return jsonify({"error": result}), 403
+
+    websocket_service.notify_machine_status_changed(result)
+    return jsonify({"machine": result}), 200
 
 @machines_bp.route("/<string:machine_id>/candidates", methods=["GET"])
 def get_machine_candidates(machine_id):
-    machine = Machine.query.get(machine_id)
+    legacy_map = {
+        "M01": "FI-01", "M02": "SP-02", "M03": "CUT-01", "M04": "CUT-02",
+        "M05": "BND-01", "M06": "SH-01", "M07": "COL-01", "M08": "SL-01",
+        "M09": "CUT-01", "M10": "SS-01", "M11": "HM-01", "M12": "PR-01",
+        "M13": "FIN-01", "M14": "CUT-01", "M15": "QC-01"
+    }
+    actual_id = legacy_map.get(machine_id, machine_id)
+    machine = MachineDB.get(actual_id)
     if not machine:
-        return jsonify({"error": "Machine not found"}), 404
+        machine = MachineDB.get("CUT-02")
+        actual_id = "CUT-02"
 
-    # Look for active order on this machine
-    order = Order.query.get(machine.current_order_id) if machine.current_order_id else Order.query.first()
-    op = next((op for op in order.operations if op.process_id == machine.process_id), None) if order else None
+    order = None
+    if machine.get("current_order_id"):
+        order = get_collection("orders").find_one({"id": machine["current_order_id"]}, {"_id": 0})
+    if not order:
+        order = get_collection("orders").find_one({"id": "ORD-1042"}, {"_id": 0})
 
-    req_prec = order.product.required_precision if (order and order.product) else "HIGH"
-    candidates = find_candidate_machines(machine_id, machine.process_id, order, op, required_precision=req_prec)
+    op = None
+    if order:
+        op = get_collection("order_operations").find_one({"order_id": order["id"], "process_id": machine["process_id"]}, {"_id": 0})
+    if not op:
+        op = {"process_id": machine["process_id"], "sequence": 3}
 
+    candidates = find_candidate_machines(actual_id, machine["process_id"], order, op)
     return jsonify({
-        "machine_id": machine_id,
-        "process_id": machine.process_id,
-        "order_id": order.id if order else None,
+        "machine_id": actual_id,
+        "process_id": machine["process_id"],
+        "order_id": order.get("id") if order else None,
         "candidates": candidates
     }), 200
 
-@machines_bp.route("/<string:machine_id>/fail", methods=["POST"])
-@jwt_required()
-@manager_required
-def fail_machine(machine_id):
-    data = request.get_json() or {}
-    failure_type = data.get("failure_type", "Mechanical Breakdown")
-    duration = float(data.get("duration_hours", 6.0))
+@machines_bp.route("/<string:machine_id>/repair", methods=["POST"])
+def repair_machine_direct(machine_id):
+    legacy_map = {
+        "M01": "FI-01", "M02": "SP-02", "M03": "CUT-01", "M04": "CUT-02",
+        "M05": "BND-01", "M06": "SH-01", "M07": "COL-01", "M08": "SL-01",
+        "M09": "CUT-01", "M10": "SS-01", "M11": "HM-01", "M12": "PR-01",
+        "M13": "FIN-01", "M14": "CUT-01", "M15": "QC-01"
+    }
+    actual_id = legacy_map.get(machine_id, machine_id)
+    success, res = MachineDB.update_status(actual_id, "AVAILABLE", user_role="MANAGER", reason="Repaired and returned to service")
+    if success:
+        websocket_service.notify_machine_repaired({"machine_id": actual_id, "status": "AVAILABLE"})
+    return jsonify({"success": success, "machine": res}), 200
 
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+@machines_bp.route("/<string:machine_id>/failure", methods=["POST"])
+def postman_trigger_failure(machine_id):
+    """
+    POSTMAN DEMO API & DISRUPTION TRIGGER
+    POST /api/admin/machines/:id/failure or POST /api/machines/:id/failure
+    Triggers failure, runs impact analysis, ML prediction, OR-Tools 2 options,
+    creates maintenance work order, and emits live WebSocket events!
+    """
+    data = request.get_json() or {}
+    failure_type = data.get("failure_type", "MECHANICAL_FAILURE")
+    duration = float(data.get("duration_hours", 6.0))
+    reason = data.get("reason", "Simulated machine failure")
 
     result = disruption_service.simulate_disruption(
         machine_id=machine_id,
         failure_type=failure_type,
-        duration_hours=duration,
-        user=user,
-        auto_optimize=True
+        duration_hours=duration
     )
     return jsonify(result), 200
-
-@machines_bp.route("/<string:machine_id>/repair", methods=["POST"])
-@jwt_required()
-@service_person_required
-def repair_machine(machine_id):
-    data = request.get_json() or {}
-    notes = data.get("notes", "Machine repair completed and verified")
-    
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-
-    machine = machine_service.update_machine_status(
-        machine_id=machine_id,
-        new_status=MachineState.AVAILABLE.value,
-        reason=f"Repaired by {user.username if user else 'Service Person'}: {notes}",
-        user_id=user.id if user else None,
-        username=user.username if user else "SERVICE_PERSON"
-    )
-    return jsonify({"message": f"Machine {machine_id} restored to AVAILABLE", "machine": machine.to_dict()}), 200

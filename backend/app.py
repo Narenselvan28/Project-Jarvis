@@ -1,12 +1,28 @@
 import os
+import sys
+
+# Ensure root folder is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from flask import Flask, jsonify
 from backend.config import Config
 from backend.extensions import db, jwt, socketio, migrate, cors
 from backend.routes import register_blueprints
 
+from bson import ObjectId
+from flask.json.provider import DefaultJSONProvider
+
+class MongoJSONProvider(DefaultJSONProvider):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.json_provider_class = MongoJSONProvider
+    app.json = MongoJSONProvider(app)
 
     # Initialize extensions
     db.init_app(app)
@@ -35,12 +51,16 @@ def create_app(config_class=Config):
     def health():
         return jsonify({"status": "healthy", "service": "Adaptive Scheduling Platform", "version": "1.0.0"}), 200
 
-    # Auto create tables for local SQLite if running
+    # Auto ensure MongoDB seed data is present on startup
     with app.app_context():
         try:
-            db.create_all()
+            from backend.database.mongo import get_collection
+            from backend.seed.seed_mongo import seed_mongo
+            if get_collection("machines").count_documents({}) == 0:
+                print("[Server] MongoDB collections empty. Seeding initial factory configuration...")
+                seed_mongo()
         except Exception as e:
-            print(f"[DB] Notice on create_all: {e}")
+            print(f"[MongoDB] Notice on startup seed check: {e}")
 
     return app
 

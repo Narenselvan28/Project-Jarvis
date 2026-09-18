@@ -12,13 +12,13 @@ export default function DemoToolbar({ onActionCompleted, isManager }) {
       setLoadingAction("reset");
       setStatusMessage("Resetting factory to pristine state...");
       await api.post("/disruptions/simulate", {
-        machine_id: "M04",
+        machine_id: "CUT-02",
         failure_type: "Mechanical Breakdown",
         duration_hours: 6.0
       });
       // Now restore it
-      await api.post("/machines/M04/repair", { notes: "Demo reset to initial state" });
-      setStatusMessage("Demo state reset. Lane 1 operational, ORD-1042 ready on M04.");
+      await api.post("/machines/CUT-02/repair", { notes: "Demo reset to initial state" });
+      setStatusMessage("Demo state reset. Factory operational, ORD-1042 ready on CUT-02.");
       if (onActionCompleted) onActionCompleted("reset");
     } catch (err) {
       console.error(err);
@@ -29,16 +29,16 @@ export default function DemoToolbar({ onActionCompleted, isManager }) {
     }
   };
 
-  const handleSimulateM04 = async () => {
+  const handleSimulateCUT02 = async () => {
     try {
-      setLoadingAction("fail_m04");
-      setStatusMessage("Simulating M04 failure -> Impact Analysis -> Candidate Discovery -> ML -> CP-SAT...");
+      setLoadingAction("fail_cut02");
+      setStatusMessage("Simulating CUT-02 failure -> Impact Analysis -> Candidate Discovery -> ML -> CP-SAT...");
       const res = await api.post("/disruptions/simulate", {
-        machine_id: "M04",
-        failure_type: "Mechanical Spindle Failure",
+        machine_id: "CUT-02",
+        failure_type: "Mechanical Cutter Failure",
         duration_hours: 6.0
       });
-      setStatusMessage(`M04 FAILED: ORD-1042 blocked -> CP-SAT optimized reassignment completed!`);
+      setStatusMessage("CUT-02 FAILED: ORD-1042 blocked -> Two recovery options generated!");
       if (onActionCompleted) onActionCompleted("disrupted", res.data);
     } catch (err) {
       console.error(err);
@@ -63,12 +63,12 @@ export default function DemoToolbar({ onActionCompleted, isManager }) {
     }
   };
 
-  const handleRepairM04 = async () => {
+  const handleRepairCUT02 = async () => {
     try {
       setLoadingAction("repair");
-      setStatusMessage("Marking M04 REPAIRED and VERIFIED by Service Person...");
-      await api.post("/machines/M04/repair", { notes: "Hydraulic valves replaced and tolerance verified" });
-      setStatusMessage("M04 is now AVAILABLE and returned to service.");
+      setStatusMessage("Marking CUT-02 REPAIRED and VERIFIED by Service Person...");
+      await api.post("/machines/CUT-02/repair", { notes: "Hydraulic actuator replaced and blade recalibrated" });
+      setStatusMessage("CUT-02 is now AVAILABLE and returned to service.");
       if (onActionCompleted) onActionCompleted("repaired");
     } catch (err) {
       console.error(err);
@@ -98,10 +98,10 @@ export default function DemoToolbar({ onActionCompleted, isManager }) {
 
         <button
           className="btn btn-danger btn-sm"
-          onClick={handleSimulateM04}
+          onClick={handleSimulateCUT02}
           disabled={loadingAction !== null}
         >
-          {loadingAction === "fail_m04" ? "Simulating..." : "Simulate M04 Failure"}
+          {loadingAction === "fail_cut02" ? "Simulating..." : "Simulate CUT-02 Failure"}
         </button>
 
         <button
@@ -114,10 +114,10 @@ export default function DemoToolbar({ onActionCompleted, isManager }) {
 
         <button
           className="btn btn-success btn-sm"
-          onClick={handleRepairM04}
+          onClick={handleRepairCUT02}
           disabled={loadingAction !== null}
         >
-          {loadingAction === "repair" ? "Repairing..." : "Repair M04"}
+          {loadingAction === "repair" ? "Repairing..." : "Repair CUT-02"}
         </button>
 
         <button

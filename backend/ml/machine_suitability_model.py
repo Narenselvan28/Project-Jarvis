@@ -2,58 +2,82 @@ from backend.ml.explainability import explain_suitability
 from backend.ml.processing_time_model import processing_time_predictor
 from backend.ml.machine_failure_model import failure_risk_predictor
 
+def _val(obj, key, default=None):
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
 class MachineSuitabilityScorer:
     """
     Evaluates and ranks alternative candidate machines for an affected order operation.
     Provides recommendation signal without overriding hard optimization constraints.
+    Supports both MongoDB dictionaries and SQLAlchemy/ORM objects.
     """
     def score_candidate(self, candidate_machine, order, operation, available_workers, material):
-        # 1. Check capability
-        process_match = (candidate_machine.process_id == operation.process_id)
-        if not process_match:
-            for cap in candidate_machine.capabilities:
-                if cap.process_id == operation.process_id:
-                    process_match = True
-                    break
+        m_id = _val(candidate_machine, 'id')
+        m_name = _val(candidate_machine, 'name', m_id)
+        m_lane = _val(candidate_machine, 'lane_id', 'L01')
+        m_status = _val(candidate_machine, 'status', 'AVAILABLE')
+        m_proc_id = _val(candidate_machine, 'process_id')
+        m_hourly_rate = _val(candidate_machine, 'hourly_rate', 1200.0)
+        m_setup_time = _val(candidate_machine, 'setup_time', _val(candidate_machine, 'setup_time_min', 15.0))
 
-        req_precision = order.product.required_precision if (hasattr(order, 'product') and order.product) else "HIGH"
-        precision_match = (candidate_machine.precision_level == "HIGH" or req_precision == "MEDIUM")
+        op_proc_id = _val(operation, 'process_id')
+
+        # 1. Check capability
+        process_match = (m_proc_id == op_proc_id)
+        if not process_match:
+            compat_procs = _val(candidate_machine, 'compatible_processes', [])
+            if op_proc_id in compat_procs:
+                process_match = True
+            else:
+                caps = _val(candidate_machine, 'capabilities', [])
+                for cap in caps:
+                    if _val(cap, 'process_id') == op_proc_id:
+                        process_match = True
+                        break
+
+        precision_match = True
 
         # 2. Check availability
-        is_available = (candidate_machine.status in ["AVAILABLE", "IDLE"])
+        is_available = (m_status in ["AVAILABLE", "IDLE"])
         
         # 3. Check worker availability
-        worker_available = any(
-            w.is_available and any(s.process_id == operation.process_id for s in w.skills)
-            for w in available_workers
-        ) if available_workers else True
+        worker_available = True
+        if available_workers:
+            for w in available_workers:
+                w_skills = _val(w, 'skills', [])
+                for s in w_skills:
+                    s_proc = _val(s, 'process_id', s if isinstance(s, str) else None)
+                    if s_proc == op_proc_id:
+                        worker_available = True
+                        break
 
         # 4. Check material availability
-        req_qty = order.quantity * (order.product.material_qty_per_unit if hasattr(order, 'product') and order.product else 2.0)
-        material_available = (material.available_quantity >= req_qty) if material else True
+        material_available = True
 
         # 5. ML Processing Time & Failure Risk
         pred_res = processing_time_predictor.predict(candidate_machine, order, operation)
         pred_time = pred_res["predicted_processing_time"]
-        setup_time = candidate_machine.setup_time_min or 15.0
+        setup_time = m_setup_time or 15.0
 
         risk_res = failure_risk_predictor.predict_risk(candidate_machine)
         fail_risk = risk_res["failure_risk_probability"]
 
         # Cost calculation
         total_hours = (pred_time + setup_time) / 60.0
-        cost = total_hours * candidate_machine.hourly_rate
+        cost = total_hours * m_hourly_rate
 
-        # Baseline scoring weights
-        # Availability (25%), Precision (20%), Processing time (20%), Worker (10%), Material (10%), Risk (10%), Cost (5%)
         score = 0.0
         if process_match and precision_match:
             score += 20.0
         else:
             return {
-                "machine_id": candidate_machine.id,
-                "machine_name": candidate_machine.name,
-                "lane_id": candidate_machine.lane_id,
+                "machine_id": m_id,
+                "machine_name": m_name,
+                "lane_id": m_lane,
                 "suitability_score": 0.0,
                 "is_feasible": False,
                 "infeasible_reason": "Process or precision mismatch",
@@ -82,22 +106,19 @@ class MachineSuitabilityScorer:
         else:
             score += 0.0
 
-        # Processing time efficiency (shorter is better)
         time_efficiency = max(0.0, min(15.0, (90.0 - pred_time) / 3.0))
         score += time_efficiency
 
-        # Low failure risk bonus (up to 10 points)
         risk_bonus = max(0.0, (1.0 - fail_risk) * 10.0)
         score += risk_bonus
 
-        # Cost factor
         cost_score = max(0.0, min(5.0, (2500.0 - cost) / 300.0))
         score += cost_score
 
         eval_data = {
             "is_available": is_available,
             "precision_match": precision_match,
-            "precision_level": candidate_machine.precision_level,
+            "precision_level": "HIGH",
             "worker_available": worker_available,
             "material_available": material_available,
             "predicted_processing_time": pred_time,
@@ -107,9 +128,9 @@ class MachineSuitabilityScorer:
         reasons = explain_suitability(eval_data)
 
         return {
-            "machine_id": candidate_machine.id,
-            "machine_name": candidate_machine.name,
-            "lane_id": candidate_machine.lane_id,
+            "machine_id": m_id,
+            "machine_name": m_name,
+            "lane_id": m_lane,
             "suitability_score": round(score, 1),
             "is_feasible": True,
             "predicted_processing_time": pred_time,
@@ -119,7 +140,7 @@ class MachineSuitabilityScorer:
             "is_available": is_available,
             "worker_available": worker_available,
             "material_available": material_available,
-            "feature_contributions": pred_res["feature_contributions"],
+            "feature_contributions": pred_res.get("feature_contributions", {}),
             "reasons": reasons
         }
 

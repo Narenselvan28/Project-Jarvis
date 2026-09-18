@@ -79,7 +79,7 @@ export default function FactoryPage({ user }) {
   }, [loadFactoryData]);
 
   const handleSimulateDisruptionClick = (machine) => {
-    setDisruptionTargetMachine(machine ? machine.id : "M04");
+    setDisruptionTargetMachine(machine ? machine.id : "CUT-02");
     setShowDisruptionModal(true);
   };
 

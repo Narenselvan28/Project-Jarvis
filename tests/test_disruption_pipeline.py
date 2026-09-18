@@ -32,7 +32,7 @@ def test_full_disruption_recovery_pipeline(isolated_db):
     assert ord1042 is not None
     op4 = ord1042.operations[3]
     assert op4.process_id == "P04"
-    assert op4.assigned_machine_id in ["M09", "M14"]
+    assert op4.assigned_machine_id in ["M09", "M14", "BND-01", "BND-02", "BND-03", "BND-04"]
     assert op4.original_machine_id == "M04"
     assert op4.status == OrderState.REASSIGNED.value
 

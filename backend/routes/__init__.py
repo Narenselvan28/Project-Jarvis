@@ -3,6 +3,8 @@ from backend.routes.dashboard import dashboard_bp
 from backend.routes.machines import machines_bp
 from backend.routes.lanes import lanes_bp
 from backend.routes.orders import orders_bp
+from backend.routes.planning import planning_bp
+from backend.routes.gantt import gantt_bp
 from backend.routes.schedules import schedules_bp
 from backend.routes.disruptions import disruptions_bp
 from backend.routes.maintenance import maintenance_bp
@@ -18,6 +20,8 @@ def register_blueprints(app):
     app.register_blueprint(machines_bp)
     app.register_blueprint(lanes_bp)
     app.register_blueprint(orders_bp)
+    app.register_blueprint(planning_bp)
+    app.register_blueprint(gantt_bp)
     app.register_blueprint(schedules_bp)
     app.register_blueprint(disruptions_bp)
     app.register_blueprint(maintenance_bp)

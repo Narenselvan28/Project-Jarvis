@@ -80,8 +80,43 @@ def isolated_db():
         op4 = OrderOperation(order_id="ORD-1042", sequence=4, process_id="P04", assigned_machine_id="M04", status="RUNNING", scheduled_start_min=150, scheduled_end_min=210, processing_time_min=60)
         op5 = OrderOperation(order_id="ORD-1042", sequence=5, process_id="P05", assigned_machine_id="M05", status="QUEUED", scheduled_start_min=210, scheduled_end_min=250, processing_time_min=40)
         db.session.add_all([op1, op2, op3, op4, op5])
-
         db.session.commit()
+
+        # Also populate Mongo collections for services using get_collection
+        from backend.database.mongo import get_collection
+        mach_coll = get_collection("machines")
+        for m in [m01, m02, m03, m04, m05, m09, m14]:
+            mach_coll.update_one(
+                {"id": m.id},
+                {"$set": {
+                    "id": m.id,
+                    "name": m.name,
+                    "lane_id": m.lane_id,
+                    "process_id": m.process_id,
+                    "status": m.status,
+                    "hourly_rate": m.hourly_rate,
+                    "x_position": m.svg_x,
+                    "y_position": m.svg_y,
+                    "capacity": 500,
+                    "unit": "pieces/hr",
+                    "compatible_processes": [m.process_id]
+                }},
+                upsert=True
+            )
+        order_coll = get_collection("orders")
+        order_coll.update_one({"id": "ORD-1042"}, {"$set": {"id": "ORD-1042", "product_id": prd.id, "priority": "URGENT", "status": "RUNNING", "deadline_hours": 12.0}}, upsert=True)
+        op_coll = get_collection("order_operations")
+        for op in [op1, op2, op3, op4, op5]:
+            op_coll.update_one({"order_id": op.order_id, "sequence": op.sequence}, {"$set": {
+                "id": f"OP-1042-0{op.sequence}",
+                "order_id": op.order_id,
+                "sequence": op.sequence,
+                "process_id": op.process_id,
+                "assigned_machine_id": op.assigned_machine_id,
+                "status": op.status,
+                "processing_time_min": op.processing_time_min
+            }}, upsert=True)
+
         yield app
         db.session.remove()
         db.drop_all()

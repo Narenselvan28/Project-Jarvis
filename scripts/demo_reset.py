@@ -4,7 +4,7 @@ import sys
 # Ensure root directory is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from backend.seed.seed_database import seed
+from backend.seed.seed_mongo import seed_mongo
 from backend.ml.training import train_all_models
 from backend.config import Config
 
@@ -20,15 +20,15 @@ if __name__ == "__main__":
     else:
         print("[Demo Reset] Verified ML models present.")
 
-    # 2. Reset and seed database
-    print("[Demo Reset] Re-seeding factory operational database...")
-    seed()
+    # 2. Reset and seed MongoDB database
+    print("[Demo Reset] Re-seeding factory MongoDB operational database...")
+    seed_mongo()
 
     print("=" * 65)
     print("  DEMO STATE READY:")
-    print("  - Lane 01: M01 -> M02 -> M03 -> M04 -> M05")
-    print("  - Order ORD-1042 (URGENT, 12h) is RUNNING on M04")
-    print("  - M09 and M14 are ready as alternative finishing machines")
+    print("  - 50+ individually addressable machines across 3 lines")
+    print("  - Order ORD-1042 (12,000 pcs, URGENT, 12h) is active on CUT-02")
+    print("  - CUT-01 is available as an alternative cutting station")
     print("  - Login credentials:")
     print("      Manager:        manager / password123")
     print("      Supervisor:     supervisor / password123")

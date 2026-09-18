@@ -9,10 +9,10 @@ export default function FlowConnector({
 }) {
   if (!fromMachine || !toMachine) return null;
 
-  const x1 = fromMachine.svg_x;
-  const y1 = fromMachine.svg_y;
-  const x2 = toMachine.svg_x;
-  const y2 = toMachine.svg_y;
+  const x1 = fromMachine.x_position !== undefined ? fromMachine.x_position : (fromMachine.svg_x || 100);
+  const y1 = fromMachine.y_position !== undefined ? fromMachine.y_position : (fromMachine.svg_y || 100);
+  const x2 = toMachine.x_position !== undefined ? toMachine.x_position : (toMachine.svg_x || 100);
+  const y2 = toMachine.y_position !== undefined ? toMachine.y_position : (toMachine.svg_y || 100);
 
   // Cubic Bezier curve control points
   const dx = (x2 - x1) * 0.5;

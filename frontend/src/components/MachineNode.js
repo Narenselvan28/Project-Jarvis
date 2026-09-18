@@ -19,12 +19,13 @@ export default function MachineNode({ machine, isSelected, onClick }) {
     name,
     process_name,
     status,
-    svg_x = 100,
-    svg_y = 100,
     current_order_id,
     current_utilization = 75,
     failure_risk = 15
   } = machine;
+
+  const posX = machine.x_position !== undefined ? machine.x_position : (machine.svg_x || 100);
+  const posY = machine.y_position !== undefined ? machine.y_position : (machine.svg_y || 100);
 
   const color = STATE_COLORS[status] || "#64748b";
   const isFailed = status === "FAILED";
@@ -34,7 +35,7 @@ export default function MachineNode({ machine, isSelected, onClick }) {
   return (
     <g
       className="svg-machine-node"
-      transform={`translate(${svg_x}, ${svg_y})`}
+      transform={`translate(${posX}, ${posY})`}
       onClick={() => onClick(machine)}
     >
       {/* Pulse wave when failed */}

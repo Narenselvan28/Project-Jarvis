@@ -1,39 +1,117 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.models.user import User
-from backend.models.disruption import Disruption, DisruptionStatus
+from backend.database.mongo import get_collection
+from backend.database.models import UserDB, DisruptionDB
 from backend.services.disruption_service import disruption_service
-from backend.routes.auth import manager_required
 
-disruptions_bp = Blueprint("disruptions", __name__, url_prefix="/api/disruptions")
+disruptions_bp = Blueprint("disruptions", __name__, url_prefix="/api")
 
-@disruptions_bp.route("", methods=["GET"])
+@disruptions_bp.route("/disruptions", methods=["GET"])
 def list_disruptions():
-    disruptions = Disruption.query.order_by(Disruption.started_at.desc()).all()
-    return jsonify({"disruptions": [d.to_dict() for d in disruptions]}), 200
+    disruptions = DisruptionDB.all()
+    return jsonify({"disruptions": disruptions}), 200
 
-@disruptions_bp.route("/active", methods=["GET"])
+@disruptions_bp.route("/disruptions/active", methods=["GET"])
 def get_active_disruptions():
-    disruptions = Disruption.query.filter_by(status=DisruptionStatus.ACTIVE.value).all()
-    return jsonify({"active_disruptions": [d.to_dict() for d in disruptions]}), 200
+    active = list(get_collection("disruptions").find({"status": "ACTIVE"}, {"_id": 0}).sort("started_at", -1))
+    return jsonify({"active_disruptions": active}), 200
 
-@disruptions_bp.route("/simulate", methods=["POST"])
-@jwt_required()
-@manager_required
-def simulate():
+@disruptions_bp.route("/disruptions/<string:disruption_id>", methods=["GET"])
+def get_disruption(disruption_id):
+    disruption = DisruptionDB.get(disruption_id)
+    if not disruption:
+        return jsonify({"error": "Disruption not found"}), 404
+    return jsonify({"disruption": disruption}), 200
+
+@disruptions_bp.route("/admin/disruptions", methods=["POST"])
+@disruptions_bp.route("/disruptions/simulate", methods=["POST"])
+def simulate_disruption_admin():
+    """
+    POST /api/admin/disruptions or /api/disruptions/simulate
+    Triggered via Postman or Admin UI:
+    Body:
+    {
+        "machine_id": "CUT-02",
+        "order_id": "ORD-1042",
+        "failure_type": "MECHANICAL_FAILURE",
+        "duration_hours": 6
+    }
+    """
     data = request.get_json() or {}
-    machine_id = data.get("machine_id", "M04")
-    failure_type = data.get("failure_type", "Mechanical Breakdown")
+    machine_id = data.get("machine_id", "CUT-02")
+    failure_type = data.get("failure_type", "MECHANICAL_FAILURE")
     duration = float(data.get("duration_hours", 6.0))
 
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    try:
+        res = disruption_service.simulate_disruption(
+            machine_id=machine_id,
+            failure_type=failure_type,
+            duration_hours=duration
+        )
+        return jsonify(res), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
-    res = disruption_service.simulate_disruption(
-        machine_id=machine_id,
-        failure_type=failure_type,
-        duration_hours=duration,
-        user=user,
-        auto_optimize=True
-    )
-    return jsonify(res), 200
+@disruptions_bp.route("/admin/machines/<string:machine_id>/failure", methods=["POST"])
+def simulate_machine_failure_admin(machine_id):
+    """
+    POST /api/admin/machines/CUT-02/failure
+    Postman jury demonstration endpoint
+    """
+    data = request.get_json() or {}
+    failure_type = data.get("failure_type", "MECHANICAL_FAILURE")
+    duration = float(data.get("duration_hours", 6.0))
+
+    try:
+        res = disruption_service.simulate_disruption(
+            machine_id=machine_id,
+            failure_type=failure_type,
+            duration_hours=duration
+        )
+        return jsonify(res), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@disruptions_bp.route("/recommendations/<string:disruption_id>", methods=["GET"])
+def get_recommendations(disruption_id):
+    disruption = DisruptionDB.get(disruption_id)
+    if not disruption:
+        return jsonify({"error": "Disruption not found"}), 404
+    return jsonify({
+        "disruption_id": disruption_id,
+        "machine_id": disruption.get("machine_id"),
+        "status": disruption.get("status"),
+        "option_a": disruption.get("option_a"),
+        "option_b": disruption.get("option_b"),
+        "approved_option": disruption.get("approved_option")
+    }), 200
+
+@disruptions_bp.route("/recommendations/<string:disruption_id>/approve", methods=["POST"])
+def approve_recovery_option(disruption_id):
+    """
+    Manager approves Option A or Option B.
+    Body: {"option": "OPTION_A"} or {"option": "OPTION_B"}
+    """
+    data = request.get_json() or {}
+    chosen = data.get("option", "OPTION_A").upper()
+
+    try:
+        res = disruption_service.approve_recommendation(disruption_id, chosen_option=chosen)
+        return jsonify(res), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+@disruptions_bp.route("/recommendations/<string:disruption_id>/reject", methods=["POST"])
+def reject_recovery_options(disruption_id):
+    """
+    Manager rejects both recovery options.
+    Body: {"reason": "Cost too high, awaiting part shipment"}
+    """
+    data = request.get_json() or {}
+    reason = data.get("reason", "Manager rejected both options")
+
+    try:
+        res = disruption_service.reject_recommendation(disruption_id, reason=reason)
+        return jsonify(res), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400

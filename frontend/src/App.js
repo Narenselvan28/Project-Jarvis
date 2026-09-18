@@ -3,10 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navigation from "./components/Navigation";
 import LoginPage from "./pages/LoginPage";
 import FactoryPage from "./pages/FactoryPage";
-import SchedulesPage from "./pages/SchedulesPage";
+import GanttPage from "./pages/GanttPage";
+import PlanningPage from "./pages/PlanningPage";
+import SupervisorPlansPage from "./pages/SupervisorPlansPage";
 import MaintenancePage from "./pages/MaintenancePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import SimulationPage from "./pages/SimulationPage";
 import AuditLogPage from "./pages/AuditLogPage";
 import api from "./services/api";
 
@@ -21,14 +22,12 @@ export default function App() {
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
-        // Verify with /auth/me
         api.get("/auth/me")
           .then((res) => {
             setUser(res.data.user);
             localStorage.setItem("user", JSON.stringify(res.data.user));
           })
           .catch(() => {
-            // Token expired
             localStorage.removeItem("access_token");
             localStorage.removeItem("user");
             setUser(null);
@@ -49,8 +48,8 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1d", color: "#64748b", fontFamily: "monospace" }}>
-        INITIALIZING ADAPTIVE MANUFACTURING CONTROLLER...
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", color: "#64748b", fontFamily: "monospace" }}>
+        INITIALIZING ADAPTIVE MANUFACTURING PLATFORM...
       </div>
     );
   }
@@ -70,9 +69,27 @@ export default function App() {
           element={user ? <FactoryPage user={user} /> : <Navigate to="/login" replace />}
         />
 
+        {/* FEATURE 1: ORDER-LEVEL & MULTI-ORDER GANTT CHART */}
         <Route
-          path="/schedules"
-          element={user ? <SchedulesPage user={user} /> : <Navigate to="/login" replace />}
+          path="/orders/:orderId/gantt"
+          element={user ? <GanttPage user={user} /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/gantt"
+          element={user ? <GanttPage user={user} /> : <Navigate to="/login" replace />}
+        />
+
+        {/* INTELLIGENCE LOOP 1: NEW ORDER PLANNING */}
+        <Route
+          path="/planning"
+          element={user ? <PlanningPage user={user} /> : <Navigate to="/login" replace />}
+        />
+
+        {/* SUPERVISOR PLAN REVIEW & HUMAN APPROVAL */}
+        <Route
+          path="/supervisor/plans"
+          element={user ? <SupervisorPlansPage user={user} /> : <Navigate to="/login" replace />}
         />
 
         <Route
@@ -83,11 +100,6 @@ export default function App() {
         <Route
           path="/analytics"
           element={user ? <AnalyticsPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/simulation"
-          element={user ? <SimulationPage user={user} /> : <Navigate to="/login" replace />}
         />
 
         <Route

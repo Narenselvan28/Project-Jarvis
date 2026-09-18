@@ -91,37 +91,65 @@ export default function FactoryMap({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        viewBox="0 0 1150 700"
+        viewBox="0 0 1520 660"
       >
         <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+          {/* Top Process Column Headers */}
+          {[
+            { code: "FI", name: "Inspection", x: 80 },
+            { code: "SP", name: "Spreading", x: 190 },
+            { code: "CUT", name: "Cutting", x: 300 },
+            { code: "BND", name: "Bundling", x: 410 },
+            { code: "SH", name: "Shoulder", x: 520 },
+            { code: "COL", name: "Collar", x: 630 },
+            { code: "SL", name: "Sleeve", x: 740 },
+            { code: "SS", name: "Side Seam", x: 850 },
+            { code: "HM", name: "Hemming", x: 960 },
+            { code: "PR/EMB", name: "Print/Emb", x: 1070 },
+            { code: "FIN", name: "Finishing", x: 1180 },
+            { code: "QC", name: "Quality", x: 1290 },
+            { code: "PK", name: "Packing", x: 1400 },
+          ].map((col) => (
+            <g key={col.code} transform={`translate(${col.x}, 28)`}>
+              <line x1="0" y1="20" x2="0" y2="580" stroke="#1e293b" strokeDasharray="3 4" strokeWidth="0.8" opacity="0.4" />
+              <rect x="-42" y="-18" width="84" height="26" rx="3" fill="#0f172a" stroke="#334155" strokeWidth="1" />
+              <text x="0" y="-5" fill="#38bdf8" fontSize="9" fontWeight="700" fontFamily="JetBrains Mono, monospace" textAnchor="middle">
+                {col.code}
+              </text>
+              <text x="0" y="5" fill="#94a3b8" fontSize="7.5" fontFamily="Inter, sans-serif" textAnchor="middle">
+                {col.name}
+              </text>
+            </g>
+          ))}
+
           {/* Lane Background Guides */}
           {lanes.map((lane, idx) => {
-            const laneY = 100 + idx * 190;
+            const laneY = 90 + idx * 180;
             return (
               <g key={lane.id}>
                 {/* Lane Guide Container */}
                 <rect
                   x="20"
-                  y={laneY - 45}
-                  width="1060"
-                  height="130"
+                  y={laneY - 20}
+                  width="1460"
+                  height="160"
                   rx="6"
-                  fill="#0b1120"
+                  fill="#090d16"
                   stroke="#172239"
                   strokeWidth="1"
                 />
 
                 {/* Lane Header Banner */}
-                <g transform={`translate(35, ${laneY - 25})`}>
+                <g transform={`translate(35, ${laneY - 10})`}>
                   <rect
                     x="0"
                     y="0"
-                    width="180"
-                    height="20"
+                    width="220"
+                    height="18"
                     rx="3"
                     className="lane-label-box"
                   />
-                  <text x="8" y="14" className="lane-title-text">
+                  <text x="8" y="13" className="lane-title-text">
                     {lane.name.toUpperCase()}
                   </text>
                 </g>
