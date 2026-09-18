@@ -31,7 +31,6 @@ export default function LoginPage({ onLoginSuccess }) {
   const quickLogin = (userRole, userPass = "password123") => {
     setUsername(userRole);
     setPassword(userPass);
-    // Submit
     setLoading(true);
     api.post("/auth/login", { username: userRole, password: userPass })
       .then((res) => {
@@ -48,156 +47,107 @@ export default function LoginPage({ onLoginSuccess }) {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#080c16",
-        backgroundImage: "radial-gradient(circle, #1a263d 1px, transparent 1px)",
-        backgroundSize: "28px 28px",
-        padding: "1rem"
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "420px",
-          background: "#0f172a",
-          border: "1px solid #243452",
-          borderRadius: "6px",
-          padding: "2rem",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)"
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
-          <div
-            style={{
-              width: "42px",
-              height: "42px",
-              background: "#1e3a8a",
-              border: "1px solid #3b82f6",
-              borderRadius: "6px",
-              margin: "0 auto 0.75rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: "18px",
-              color: "#60a5fa"
-            }}
-          >
-            APS
+    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] p-4 font-sans">
+      <div className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-xl">
+        
+        {/* Brand Header */}
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-[#714B67] rounded-xl flex items-center justify-center text-white text-xl font-bold mx-auto mb-3 shadow-sm">
+            <i className="fa-solid fa-industry"></i>
           </div>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#f8fafc", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Control Room Access
-          </h2>
-          <p style={{ fontSize: "0.78rem", color: "#64748b", fontFamily: "monospace", marginTop: "0.25rem" }}>
-            Adaptive Production Scheduling & Disruption Recovery
+          <h1 className="text-xl font-bold tracking-tight text-[#1F2937]">
+            Fixoria <sup className="text-xs text-[#6B7280] font-normal">TM</sup>
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-1">
+            Adaptive Manufacturing Intelligence Platform
           </p>
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: "0.6rem 0.85rem",
-              background: "rgba(239, 68, 68, 0.15)",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-              color: "#fca5a5",
-              fontSize: "0.78rem",
-              borderRadius: "4px",
-              marginBottom: "1rem"
-            }}
-          >
-            {error}
+          <div className="p-3 mb-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+            <i className="fa-solid fa-circle-exclamation"></i>
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label style={{ display: "block", fontSize: "0.72rem", fontFamily: "monospace", color: "#94a3b8", marginBottom: "0.35rem" }}>
-              OPERATOR USERNAME
+            <label className="block text-xs font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">
+              Username
             </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              style={{
-                width: "100%",
-                padding: "0.6rem 0.75rem",
-                background: "#080d1a",
-                border: "1px solid #243452",
-                color: "#f8fafc",
-                borderRadius: "4px",
-                fontFamily: "monospace",
-                fontSize: "0.85rem"
-              }}
+              className="w-full px-3.5 py-2.5 bg-white border border-[#E5E7EB] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:border-[#714B67] focus:ring-2 focus:ring-[#F4EBF1] transition-all"
+              placeholder="e.g. manager"
             />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.72rem", fontFamily: "monospace", color: "#94a3b8", marginBottom: "0.35rem" }}>
-              SECURITY KEY / PASSWORD
+            <label className="block text-xs font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">
+              Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{
-                width: "100%",
-                padding: "0.6rem 0.75rem",
-                background: "#080d1a",
-                border: "1px solid #243452",
-                color: "#f8fafc",
-                borderRadius: "4px",
-                fontFamily: "monospace",
-                fontSize: "0.85rem"
-              }}
+              className="w-full px-3.5 py-2.5 bg-white border border-[#E5E7EB] rounded-lg text-sm text-[#1F2937] focus:outline-none focus:border-[#714B67] focus:ring-2 focus:ring-[#F4EBF1] transition-all"
+              placeholder="••••••••"
             />
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary"
-            style={{ padding: "0.65rem", marginTop: "0.5rem" }}
             disabled={loading}
+            className="w-full bg-[#714B67] hover:bg-[#5C3D54] text-white py-2.5 px-4 rounded-lg text-sm font-semibold shadow-sm transition-all duration-150 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? "Authenticating..." : "Enter Industrial Control System"}
+            {loading ? (
+              <>
+                <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                <span>Signing In...</span>
+              </>
+            ) : (
+              <>
+                <span>Sign In to Platform</span>
+                <i className="fa-solid fa-arrow-right text-xs"></i>
+              </>
+            )}
           </button>
         </form>
 
-        {/* Quick Role Switcher for Demonstration */}
-        <div style={{ marginTop: "1.75rem", paddingTop: "1.25rem", borderTop: "1px solid #1e293b" }}>
-          <div style={{ fontSize: "0.7rem", color: "#64748b", fontFamily: "monospace", textAlign: "center", marginBottom: "0.6rem" }}>
-            DEMONSTRATION QUICK-SWITCH ROLES
+        {/* Demonstration Quick-Switch Roles */}
+        <div className="mt-8 pt-5 border-t border-[#E5E7EB]">
+          <div className="text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider text-center mb-3">
+            Instant Demo Logins
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.4rem" }}>
+          <div className="grid grid-cols-3 gap-2">
             <button
-              className="btn btn-secondary btn-sm"
+              type="button"
               onClick={() => quickLogin("manager")}
-              style={{ fontSize: "0.7rem" }}
+              className="px-2.5 py-2 text-xs font-medium text-[#4B5563] bg-[#F9FAFB] hover:bg-[#F4EBF1] hover:text-[#714B67] border border-[#E5E7EB] rounded-lg transition-colors text-center"
             >
               Manager
             </button>
             <button
-              className="btn btn-secondary btn-sm"
+              type="button"
               onClick={() => quickLogin("supervisor")}
-              style={{ fontSize: "0.7rem" }}
+              className="px-2.5 py-2 text-xs font-medium text-[#4B5563] bg-[#F9FAFB] hover:bg-[#F4EBF1] hover:text-[#714B67] border border-[#E5E7EB] rounded-lg transition-colors text-center"
             >
               Supervisor
             </button>
             <button
-              className="btn btn-secondary btn-sm"
+              type="button"
               onClick={() => quickLogin("service")}
-              style={{ fontSize: "0.7rem" }}
+              className="px-2.5 py-2 text-xs font-medium text-[#4B5563] bg-[#F9FAFB] hover:bg-[#F4EBF1] hover:text-[#714B67] border border-[#E5E7EB] rounded-lg transition-colors text-center"
             >
               Service
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -105,7 +105,7 @@ export default function FactoryPage({ user }) {
   const activeDisruptions = factoryData?.active_disruptions || [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - var(--topbar-height))" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", overflow: "hidden" }}>
       {/* Demo Mode Action Toolbar (Manager Only) */}
       <DemoToolbar
         isManager={user?.role === "MANAGER"}

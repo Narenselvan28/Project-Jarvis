@@ -1,46 +1,52 @@
 :root {
-  /* Industrial Palette */
-  --bg-primary: #0a0f1d;
-  --bg-secondary: #0f172a;
-  --bg-card: #131d33;
-  --bg-card-hover: #182440;
-  --bg-subtle: #1e293b;
-  --bg-input: #0b1325;
+  /* Fixoria / Arivon Executive Palette */
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-subtle: #f4ebf1;
+  --bg-input: #ffffff;
 
-  /* Engineering Grid & Borders */
-  --border-color: #243452;
-  --border-subtle: #1a273e;
-  --border-accent: #3b82f6;
+  /* Borders & Dividers */
+  --border-color: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-accent: #714b67;
 
   /* Typography */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-inverse: #ffffff;
+
+  /* Primary Brand (Odoo Plum) */
+  --primary: #714b67;
+  --primary-hover: #5c3d54;
+  --primary-light: #f4ebf1;
 
   /* Machine & Operational State Colors */
   --status-available: #10b981;  /* Emerald */
-  --status-running: #06b6d4;    /* Cyan */
-  --status-idle: #64748b;       /* Slate */
-  --status-setup: #f59e0b;      /* Amber */
-  --status-blocked: #f97316;    /* Orange */
-  --status-failed: #ef4444;     /* Crimson */
-  --status-maintenance: #ec4899;/* Rose */
-  --status-repaired: #8b5cf6;   /* Purple */
-  --status-verified: #3b82f6;   /* Blue */
-  --status-reassigned: #14b8a6; /* Teal */
+  --status-running: #0284c7;    /* Sky */
+  --status-idle: #6b7280;       /* Slate */
+  --status-setup: #d97706;      /* Amber */
+  --status-blocked: #ea580c;    /* Orange */
+  --status-failed: #e11d48;     /* Crimson */
+  --status-maintenance: #db2777;/* Rose */
+  --status-repaired: #7c3aed;   /* Violet */
+  --status-verified: #2563eb;   /* Blue */
+  --status-reassigned: #0d9488; /* Teal */
 
   /* Priority Accents */
-  --priority-urgent: #ef4444;
-  --priority-high: #f97316;
-  --priority-medium: #f59e0b;
+  --priority-urgent: #e11d48;
+  --priority-high: #ea580c;
+  --priority-medium: #d97706;
   --priority-low: #10b981;
 
   /* Typography Fonts */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
 
-  /* Layout */
+  /* Layout Constants */
+  --sidebar-width: 260px;
   --topbar-height: 56px;
   --demobar-height: 44px;
 }

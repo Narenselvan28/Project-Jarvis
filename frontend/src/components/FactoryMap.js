@@ -111,12 +111,12 @@ export default function FactoryMap({
             { code: "PK", name: "Packing", x: 1400 },
           ].map((col) => (
             <g key={col.code} transform={`translate(${col.x}, 28)`}>
-              <line x1="0" y1="20" x2="0" y2="580" stroke="#1e293b" strokeDasharray="3 4" strokeWidth="0.8" opacity="0.4" />
-              <rect x="-42" y="-18" width="84" height="26" rx="3" fill="#0f172a" stroke="#334155" strokeWidth="1" />
-              <text x="0" y="-5" fill="#38bdf8" fontSize="9" fontWeight="700" fontFamily="JetBrains Mono, monospace" textAnchor="middle">
+              <line x1="0" y1="20" x2="0" y2="580" stroke="#E5E7EB" strokeDasharray="3 4" strokeWidth="0.8" opacity="0.8" />
+              <rect x="-42" y="-18" width="84" height="26" rx="4" fill="#FFFFFF" stroke="#E5E7EB" strokeWidth="1" />
+              <text x="0" y="-5" fill="#714B67" fontSize="9" fontWeight="700" fontFamily="Inter, sans-serif" textAnchor="middle">
                 {col.code}
               </text>
-              <text x="0" y="5" fill="#94a3b8" fontSize="7.5" fontFamily="Inter, sans-serif" textAnchor="middle">
+              <text x="0" y="5" fill="#6B7280" fontSize="7.5" fontFamily="Inter, sans-serif" textAnchor="middle">
                 {col.name}
               </text>
             </g>
@@ -133,9 +133,9 @@ export default function FactoryMap({
                   y={laneY - 20}
                   width="1460"
                   height="160"
-                  rx="6"
-                  fill="#090d16"
-                  stroke="#172239"
+                  rx="8"
+                  fill="#FFFFFF"
+                  stroke="#E5E7EB"
                   strokeWidth="1"
                 />
 
@@ -145,11 +145,13 @@ export default function FactoryMap({
                     x="0"
                     y="0"
                     width="220"
-                    height="18"
-                    rx="3"
-                    className="lane-label-box"
+                    height="20"
+                    rx="4"
+                    fill="#F4EBF1"
+                    stroke="#E5E7EB"
+                    strokeWidth="1"
                   />
-                  <text x="8" y="13" className="lane-title-text">
+                  <text x="10" y="14" fill="#714B67" fontSize="10" fontWeight="700" fontFamily="Inter, sans-serif">
                     {lane.name.toUpperCase()}
                   </text>
                 </g>

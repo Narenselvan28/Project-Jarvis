@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Navigation from "./components/Navigation";
+import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import FactoryPage from "./pages/FactoryPage";
 import GanttPage from "./pages/GanttPage";
@@ -49,76 +49,34 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", color: "#64748b", fontFamily: "monospace" }}>
-        INITIALIZING ADAPTIVE MANUFACTURING PLATFORM...
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", color: "#714b67", fontFamily: "sans-serif", fontSize: "0.875rem", fontWeight: 600 }}>
+        <i className="fa-solid fa-spinner fa-spin mr-2"></i> Initializing Fixoria Adaptive Platform...
       </div>
     );
   }
 
   return (
     <BrowserRouter>
-      {user && <Navigation user={user} onLogout={handleLogout} />}
-
       <Routes>
         <Route
           path="/login"
           element={user ? <Navigate to="/factory" replace /> : <LoginPage onLoginSuccess={(u) => setUser(u)} />}
         />
 
-        <Route
-          path="/factory"
-          element={user ? <FactoryPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        {/* FEATURE 1: ORDER-LEVEL & MULTI-ORDER GANTT CHART */}
-        <Route
-          path="/orders/:orderId/gantt"
-          element={user ? <GanttPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/gantt"
-          element={user ? <GanttPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        {/* INTELLIGENCE LOOP 1: NEW ORDER PLANNING */}
-        <Route
-          path="/planning"
-          element={user ? <PlanningPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        {/* SUPERVISOR PLAN REVIEW & HUMAN APPROVAL */}
-        <Route
-          path="/supervisor/plans"
-          element={user ? <SupervisorPlansPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/maintenance"
-          element={user ? <MaintenancePage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/analytics"
-          element={user ? <AnalyticsPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/audit-logs"
-          element={user ? <AuditLogPage user={user} /> : <Navigate to="/login" replace />}
-        />
-
-        <Route
-          path="/booking-report"
-          element={<BookingReportPage />}
-        />
-
-        <Route
-          path="/report"
-          element={<BookingReportPage />}
-        />
-
-        <Route path="*" element={<Navigate to={user ? "/factory" : "/login"} replace />} />
+        {/* ALL OPERATIONAL PAGES EMBEDDED IN FIXORIA APP LAYOUT */}
+        <Route element={user ? <AppLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
+          <Route path="/factory" element={<FactoryPage user={user} />} />
+          <Route path="/orders/:orderId/gantt" element={<GanttPage user={user} />} />
+          <Route path="/gantt" element={<GanttPage user={user} />} />
+          <Route path="/planning" element={<PlanningPage user={user} />} />
+          <Route path="/supervisor/plans" element={<SupervisorPlansPage user={user} />} />
+          <Route path="/maintenance" element={<MaintenancePage user={user} />} />
+          <Route path="/analytics" element={<AnalyticsPage user={user} />} />
+          <Route path="/audit-logs" element={<AuditLogPage user={user} />} />
+          <Route path="/booking-report" element={<BookingReportPage />} />
+          <Route path="/report" element={<BookingReportPage />} />
+          <Route path="*" element={<Navigate to="/factory" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

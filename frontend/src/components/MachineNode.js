@@ -81,7 +81,7 @@ export default function MachineNode({ machine, isSelected, onClick }) {
         cx="0"
         cy="0"
         r="28"
-        fill="#0f172a"
+        fill="#FFFFFF"
         stroke={color}
         strokeWidth={isSelected ? "3" : "2"}
         className="node-outer-ring"
@@ -94,7 +94,7 @@ export default function MachineNode({ machine, isSelected, onClick }) {
           cy="0"
           r="24"
           fill="none"
-          stroke="#38bdf8"
+          stroke="#714B67"
           strokeWidth="1.5"
           strokeDasharray="14 18"
           className="node-indicator-running"
@@ -102,20 +102,20 @@ export default function MachineNode({ machine, isSelected, onClick }) {
       )}
 
       {/* Inner Technical Core */}
-      <circle cx="0" cy="0" r="18" fill="#1e293b" />
+      <circle cx="0" cy="0" r="18" fill="#F4EBF1" />
 
       {/* Machine ID Monospace Text */}
       <text
         x="0"
         y="1"
         className="machine-id-text"
-        fill={isFailed ? "#fca5a5" : "#f8fafc"}
+        fill={isFailed ? "#E11D48" : "#1F2937"}
       >
         {id}
       </text>
 
       {/* Process Title */}
-      <text x="0" y="42" className="machine-sub-text">
+      <text x="0" y="42" className="machine-sub-text" fill="#6B7280">
         {process_name ? process_name.split(" ")[0] : "Process"}
       </text>
 
@@ -128,14 +128,14 @@ export default function MachineNode({ machine, isSelected, onClick }) {
             width="64"
             height="15"
             rx="3"
-            fill="#1e293b"
+            fill="#FFFFFF"
             stroke={color}
             strokeWidth="1"
           />
           <text
             x="0"
             y="3"
-            fill="#e2e8f0"
+            fill="#1F2937"
             fontSize="8.5"
             fontWeight="700"
             fontFamily="JetBrains Mono, monospace"

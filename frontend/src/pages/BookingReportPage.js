@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export default function BookingReportPage() {
+export default function BookingReportPage({ standalone = false }) {
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSlideOver, setShowSlideOver] = useState(false);
@@ -86,10 +86,11 @@ export default function BookingReportPage() {
   });
 
   return (
-    <div className="bg-white text-textMain font-sans h-screen flex overflow-hidden antialiased">
+    <div className={`text-textMain font-sans flex overflow-hidden antialiased ${standalone ? "bg-white h-screen" : "flex-1 h-full flex-col bg-bgMain"}`}>
       
-      {/* LEFT SIDEBAR */}
-      <aside className="w-[260px] bg-white border-r border-borderCol flex flex-col shrink-0 z-30">
+      {/* LEFT SIDEBAR (Only in standalone mode) */}
+      {standalone && (
+        <aside className="w-[260px] bg-white border-r border-borderCol flex flex-col shrink-0 z-30">
         
         {/* Logo */}
         <div className="h-16 flex items-center px-5 border-b border-borderCol shrink-0">
@@ -232,31 +233,51 @@ export default function BookingReportPage() {
           </div>
         </div>
       </aside>
+      )}
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col overflow-hidden bg-bgMain">
         
-        {/* TOP BAR */}
-        <header className="h-14 bg-white border-b border-borderCol flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-2 text-xs text-textSub">
-            <i className="fa-solid fa-house text-[10px]"></i>
-            <span>/</span>
-            <span>Report</span>
-            <span>/</span>
-            <span className="text-textMain font-medium">Booking Report</span>
-          </div>
-          <div className="flex items-center gap-3">
+        {/* TOP BAR (Standalone mode) */}
+        {standalone && (
+          <header className="h-14 bg-white border-b border-borderCol flex items-center justify-between px-6 shrink-0">
+            <div className="flex items-center gap-2 text-xs text-textSub">
+              <i className="fa-solid fa-house text-[10px]"></i>
+              <span>/</span>
+              <span>Report</span>
+              <span>/</span>
+              <span className="text-textMain font-medium">Booking Report</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowSkeleton((prev) => !prev)}
+                className="text-textSub hover:text-primary transition-colors text-xs font-medium flex items-center gap-1.5 border border-borderCol px-3 py-1.5 rounded-md hover:bg-white hover:shadow-sm"
+              >
+                <i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Toggle Skeleton
+              </button>
+              <button className="text-textSub hover:text-textMain transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-bgMain">
+                <i className="fa-solid fa-ellipsis text-sm"></i>
+              </button>
+            </div>
+          </header>
+        )}
+
+        {/* Action Header in App Shell mode */}
+        {!standalone && (
+          <div className="h-11 bg-white border-b border-borderCol flex items-center justify-between px-8 shrink-0">
+            <div className="flex items-center gap-2 text-xs text-textSub">
+              <span className="font-semibold text-textMain">Fixoria Report Telemetry</span>
+              <span>•</span>
+              <span>7 Verified Allocations</span>
+            </div>
             <button
               onClick={() => setShowSkeleton((prev) => !prev)}
-              className="text-textSub hover:text-primary transition-colors text-xs font-medium flex items-center gap-1.5 border border-borderCol px-3 py-1.5 rounded-md hover:bg-white hover:shadow-sm"
+              className="text-textSub hover:text-primary transition-colors text-xs font-medium flex items-center gap-1.5 border border-borderCol px-2.5 py-1 rounded-md hover:bg-gray-50"
             >
               <i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Toggle Skeleton
             </button>
-            <button className="text-textSub hover:text-textMain transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-bgMain">
-              <i className="fa-solid fa-ellipsis text-sm"></i>
-            </button>
           </div>
-        </header>
+        )}
 
         {/* SCROLLABLE CONTENT */}
         <div className="flex-1 overflow-y-auto p-8">
