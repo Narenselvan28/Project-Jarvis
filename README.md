@@ -474,6 +474,54 @@ Executed autonomous browser validation against the running application:
 - **Scenario F (Maintenance Queue):** Verified creation of work order `WO-00001`; advanced status from `OPEN` $\rightarrow$ `ASSIGNED` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `REPAIRED` $\rightarrow$ `VERIFIED`; confirmed machine returned to operational status.
 - **Scenario G (Responsive Testing):** Verified layouts on `1440×900`, `1024×768`, `768×1024`, and `390×844` with zero accidental page-level horizontal overflow.
 
+## MongoDB Configuration
+
+ReFlow uses **MongoDB Atlas as the PRIMARY database** and automatically supports **Local MongoDB fallback** for offline development, local demonstrations, and network resilience.
+
+### Architecture & Fallback Behavior
+
+```text
+                  ReFlow Application
+                          │
+                          ▼
+                  MongoDB Manager
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+    MongoDB Atlas                   Local MongoDB
+   (Primary Cloud)                (Resilient Fallback)
+          │                               │
+          └───────────────┬───────────────┘
+                          │
+                          ▼
+                 reflow Database
+```
+
+### Connection Modes (`DATABASE_MODE`)
+
+Configure `DATABASE_MODE` in `.env`:
+
+| Mode | Behavior | Use Case |
+|---|---|---|
+| **`auto`** *(Default)* | Attempts **MongoDB Atlas** first. If Atlas is unreachable or times out within `MONGODB_CONNECTION_TIMEOUT_MS` (5000ms), it automatically falls back to **Local MongoDB**. | Production deployments and local development with cloud resilience. |
+| **`atlas`** | Strictly connects to **MongoDB Atlas only**. If Atlas is unavailable, raises a clear connection error without falling back. | Strict cloud-only production staging. |
+| **`local`** | Strictly connects to **Local MongoDB only** (`mongodb://127.0.0.1:27017`). Does not attempt remote Atlas connection. | Air-gapped / offline local testing. |
+
+### Diagnostic Health Endpoint (`GET /api/v1/health`)
+The backend exposes a safe status probe indicating the active provider without revealing credentials:
+```json
+{
+  "status": "healthy",
+  "database": {
+    "provider": "ATLAS",
+    "status": "connected"
+  },
+  "ml_service": "available",
+  "optimization_engine": "available"
+}
+```
+*(When local fallback is engaged, `"provider"` reports `"LOCAL"`).*
+
 ---
 
 ## Setup & Running Locally
@@ -482,16 +530,30 @@ Executed autonomous browser validation against the running application:
 - Python 3.11+
 - Node.js 18+ and npm
 - Local MongoDB community server (listening on `mongodb://127.0.0.1:27017`)
+- MongoDB Atlas cluster URI (optional if using local fallback)
 
-### 1. Database Setup
-Ensure MongoDB is running locally:
+### 1. Environment Configuration
+Copy the sample environment file:
 ```bash
-# Verify connection to local MongoDB
-python -c "from backend.database.mongo import get_collection; print('Machines:', get_collection('machines').count_documents({}))"
+cp .env.example .env
 ```
-*(If collections are empty, the backend automatically seeds the 50 machines and default factory baseline on startup).*
+Edit `.env` to configure your database connection:
+```env
+MONGODB_ATLAS_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/reflow?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_LOCAL_URI=mongodb://127.0.0.1:27017
+MONGODB_DB_NAME=reflow
+MONGODB_CONNECTION_TIMEOUT_MS=5000
+DATABASE_MODE=auto
+```
 
-### 2. Backend Setup
+### 2. Database Seeding
+To manually seed or reset the active database (Atlas or Local):
+```bash
+python scripts/seed_demo.py
+```
+*(The backend also automatically verifies and seeds the 50 machines and default operations on initial startup if the database is empty).*
+
+### 3. Backend Setup
 ```bash
 # Navigate to repository root
 cd "d:/Studies/Project - Jarvis"
@@ -503,7 +565,7 @@ pip install -r requirements.txt
 python backend/app.py
 ```
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 ```bash
 # In a separate terminal, navigate to frontend
 cd frontend
@@ -515,12 +577,12 @@ npm install
 npm start
 ```
 
-### 4. Accessing the Application
-Open [http://localhost:3000](http://localhost:3000) in a modern web browser.
+### 5. Accessing the Application
+Open [http://localhost:3000](http://localhost:3000) in a web browser.
 
 ### Seeded Demo Accounts (Displayed on Login Page)
 | Role | Username | Password | Operational Access |
 |---|---|---|---|
 | **Plant Manager** (*Nirvagam*) | `manager` | `password123` | Full plant authority, order creation, disruption recovery approval |
 | **Floor Supervisor** (*Meerpaarvai*) | `supervisor` | `password123` | Floor oversight, production plan review, schedule validation |
-| **Service Technician** (*Paramaippu*) | `service_person` | `password123` | Fleet maintenance queue, work orders, repair verification |
+| **Service Technician** (*Paramaippu*) | `service` | `password123` | Fleet maintenance queue, work orders, repair verification |

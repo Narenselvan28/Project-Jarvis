@@ -16,8 +16,10 @@ from backend.routes.v1.analytics_controller import analytics_v1_bp
 from backend.routes.v1.simulation_controller import simulation_v1_bp
 from backend.routes.v1.admin_controller import admin_v1_bp
 from backend.routes.v1.audit_controller import audit_v1_bp
+from backend.routes.v1.health_controller import health_v1_bp
 
 def register_v1_blueprints(app):
+    app.register_blueprint(health_v1_bp)
     app.register_blueprint(auth_v1_bp)
     app.register_blueprint(factory_v1_bp)
     app.register_blueprint(machines_v1_bp)
