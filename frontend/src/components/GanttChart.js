@@ -25,14 +25,14 @@ export default function GanttChart({ operations = [], machines = [] }) {
   });
 
   return (
-    <div style={{ overflowX: "auto", background: "#0b1220", border: "1px solid #243452", borderRadius: "6px", padding: "1rem" }}>
+    <div style={{ overflowX: "auto", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "1rem" }}>
       <svg width="1050" height={machines.length * 36 + 50}>
         {/* Time Axis Markers */}
         {[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600].map((t) => {
           const x = 120 + t * timeScale;
           return (
             <g key={t}>
-              <line x1={x} y1={25} x2={x} y2={machines.length * 36 + 30} stroke="#1a273e" strokeDasharray="3 3" />
+              <line x1={x} y1={25} x2={x} y2={machines.length * 36 + 30} stroke="#e2e8f0" strokeDasharray="3 3" />
               <text x={x} y={18} fill="#64748b" fontSize="10" fontFamily="monospace" textAnchor="middle">
                 {t}m
               </text>
@@ -48,12 +48,12 @@ export default function GanttChart({ operations = [], machines = [] }) {
           return (
             <g key={m.id}>
               {/* Machine label */}
-              <text x="15" y={y + 18} fill="#94a3b8" fontSize="11" fontWeight="700" fontFamily="monospace">
+              <text x="15" y={y + 18} fill="#0f172a" fontSize="11" fontWeight="700" fontFamily="monospace">
                 {m.id} ({m.lane_id})
               </text>
 
               {/* Row guide */}
-              <line x1="120" y1={y + 28} x2="1020" y2={y + 28} stroke="#172239" strokeWidth="0.8" />
+              <line x1="120" y1={y + 28} x2="1020" y2={y + 28} stroke="#f1f5f9" strokeWidth="1" />
 
               {/* Operations Blocks */}
               {mOps.map((op) => {

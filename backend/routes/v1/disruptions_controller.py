@@ -29,8 +29,10 @@ def get_disruption(disruption_id):
         return make_error("RESOURCE_NOT_FOUND", f"Disruption '{disruption_id}' not found.", status_code=404)
     return make_success(disruption)
 
+from backend.domain.auth_decorators import role_required
+
 @disruptions_v1_bp.route("/disruptions/<string:disruption_id>/approve", methods=["POST"])
-@jwt_required()
+@role_required("MANAGER")
 def approve_recovery(disruption_id):
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "manager", "role": "MANAGER"}
@@ -48,7 +50,7 @@ def approve_recovery(disruption_id):
         return make_error("RECOVERY_APPROVAL_FAILED", str(e), status_code=400)
 
 @disruptions_v1_bp.route("/disruptions/<string:disruption_id>/reject", methods=["POST"])
-@jwt_required()
+@role_required("MANAGER")
 def reject_recovery(disruption_id):
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "manager", "role": "MANAGER"}

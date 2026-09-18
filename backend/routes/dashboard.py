@@ -44,7 +44,7 @@ def get_factory_overview():
         lanes_data.append(lane_dict)
 
     data = {
-        "factory_name": "ARIVON Adaptive Precision Plant",
+        "factory_name": "ReFlow Nilayam — Adaptive Production Facility",
         "current_shift": "Shift 1 (06:00 - 14:00)",
         "lanes": lanes_data,
         "machines": machines,

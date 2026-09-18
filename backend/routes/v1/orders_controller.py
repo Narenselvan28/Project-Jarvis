@@ -11,6 +11,8 @@ from backend.schemas.order_schemas import OrderCreateSchema, PlanGenerationReque
 from backend.schemas.common import make_success, make_error
 from backend.domain.errors import DomainError
 
+from backend.domain.auth_decorators import role_required
+
 orders_v1_bp = Blueprint("orders_v1", __name__, url_prefix="/api/v1")
 
 @orders_v1_bp.route("/orders", methods=["GET"])
@@ -26,7 +28,7 @@ def get_order(order_id):
     return make_success(order)
 
 @orders_v1_bp.route("/orders", methods=["POST"])
-@jwt_required()
+@role_required("MANAGER", "SUPERVISOR")
 def create_order():
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "manager", "role": "MANAGER"}
@@ -55,7 +57,7 @@ def create_order():
     return make_success(created, status_code=201)
 
 @orders_v1_bp.route("/orders/plan", methods=["POST"])
-@jwt_required()
+@role_required("MANAGER", "SUPERVISOR")
 def generate_order_plan():
     """
     Intelligence Loop 1: Automatic Production Planning
@@ -83,7 +85,7 @@ def generate_order_plan():
     return make_success(plan, meta={"status": "PENDING_SUPERVISOR_APPROVAL"})
 
 @orders_v1_bp.route("/orders/plan/<string:plan_id>/approve", methods=["POST"])
-@jwt_required()
+@role_required("SUPERVISOR", "MANAGER")
 def approve_order_plan(plan_id):
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "supervisor", "role": "SUPERVISOR"}
@@ -104,7 +106,7 @@ def approve_order_plan(plan_id):
         return make_error("INTERNAL_ERROR", str(e), status_code=500)
 
 @orders_v1_bp.route("/orders/plan/<string:plan_id>/reject", methods=["POST"])
-@jwt_required()
+@role_required("SUPERVISOR", "MANAGER")
 def reject_order_plan(plan_id):
     raw_data = request.get_json() or {}
     reason = raw_data.get("reason", "Rejected by Supervisor")

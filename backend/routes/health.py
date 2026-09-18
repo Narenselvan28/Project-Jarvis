@@ -14,7 +14,7 @@ health_bp = Blueprint("health", __name__)
 def liveness():
     return jsonify({
         "status": "UP",
-        "service": "ARIVON Manufacturing Intelligence Platform",
+        "service": "ReFlow Adaptive Production Intelligence Platform",
         "version": "1.0.0"
     }), 200
 

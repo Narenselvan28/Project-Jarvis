@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Fixoria — Booking Report & Adaptive Production Intelligence Platform" />
-    <title>Fixoria — Booking Report</title>
+    <meta name="description" content="ReFlow — Adaptive Production Scheduling & Disruption Management Platform" />
+    <title>ReFlow — Adaptive Production Intelligence</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,25 +25,31 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
-              bgMain: '#F9FAFB',
+              bgMain: '#F8FAFC',
               surface: '#FFFFFF',
-              borderCol: '#E5E7EB',
-              textMain: '#1F2937',
-              textSub: '#6B7280',
-              primary: '#714B67', // Odoo Plum
-              primaryHover: '#5C3D54',
-              primaryLight: '#F4EBF1',
-              success: '#10B981',
-              successLight: '#ECFDF5',
-              warning: '#F59E0B',
-              warningLight: '#FFFBEB',
-              critical: '#E11D48',
-              criticalLight: '#FFF1F2',
+              borderCol: '#E2E8F0',
+              textMain: '#0F172A',
+              textSub: '#475569',
+              primary: '#1E293B',        // Industrial Charcoal Navy
+              primaryHover: '#0F172A',
+              primaryLight: '#F1F5F9',
+              brandBlue: '#2563EB',
+              brandTeal: '#0D9488',
+              statusRunning: '#16A34A',
+              statusAvailable: '#0D9488',
+              statusIdle: '#64748B',
+              statusSetup: '#D97706',
+              statusBlocked: '#EA580C',
+              statusFailed: '#DC2626',
+              statusMaint: '#7C3AED',
+              statusReassigned: '#2563EB',
+              statusRepaired: '#0D9488',
+              statusVerified: '#059669',
             },
             boxShadow: {
               'soft': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
-              'card-hover': '0 10px 15px -3px rgba(113, 75, 103, 0.05), 0 4px 6px -2px rgba(113, 75, 103, 0.03)',
-              'float': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+              'modal': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             }
           }
         }
@@ -51,61 +57,30 @@
     </script>
 
     <style>
-      /* Clean Scrollbar */
+      /* Clean Light Scrollbars */
       ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+      ::-webkit-scrollbar-track { background: #F1F5F9; }
+      ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-      /* Remove default select styling */
+      /* Form Elements */
       select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
-
-      /* Custom Checkbox */
       input[type="checkbox"] {
-        accent-color: #714B67; /* Odoo Plum */
+        accent-color: #1E293B;
         width: 14px;
         height: 14px;
         cursor: pointer;
         border-radius: 4px;
       }
 
-      /* Skeleton Pulse */
-      .skeleton {
-        background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-      }
-      @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-      }
-
-      /* Subtle Card Lift */
-      .kpi-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      }
-      .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(113, 75, 103, 0.05), 0 4px 6px -2px rgba(113, 75, 103, 0.03);
-        border-color: #D1D5DB;
-      }
-
-      /* Status Pill Transition */
-      .status-pill {
-        transition: background-color 0.2s ease, color 0.2s ease;
-      }
-
-      /* Slide-over Panel */
-      .slide-over {
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .slide-over.open {
-        transform: translateX(0);
+      /* Modal Backdrop */
+      .modal-backdrop {
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(2px);
       }
     </style>
   </head>
-  <body class="bg-white text-textMain font-sans antialiased">
+  <body class="bg-[#F8FAFC] text-textMain font-sans antialiased">
     <div id="root"></div>
   </body>
 </html>

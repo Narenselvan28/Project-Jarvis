@@ -12,7 +12,10 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-super-secret-scheduling-key-2026")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRES_HOURS", "24")))
 
-    # MongoDB Configuration
+    # Application-Level AES-256-GCM Encryption Key
+    AES_ENCRYPTION_KEY = os.getenv("AES_ENCRYPTION_KEY", "reflow-super-secret-aes-key-32b!")
+
+    # MongoDB Configuration (Local production-grade MongoDB primary)
     MONGO_URI = os.getenv(
         "MONGO_URI",
         "mongodb://127.0.0.1:27017/production_planning"

@@ -10,6 +10,8 @@ from backend.services.maintenance_service import maintenance_service
 from backend.schemas.common import make_success, make_error
 from backend.domain.errors import DomainError
 
+from backend.domain.auth_decorators import role_required
+
 maintenance_v1_bp = Blueprint("maintenance_v1", __name__, url_prefix="/api/v1")
 
 @maintenance_v1_bp.route("/maintenance", methods=["GET"])
@@ -26,7 +28,7 @@ def get_work_order(wo_id):
     return make_success(wo)
 
 @maintenance_v1_bp.route("/maintenance", methods=["POST"])
-@jwt_required()
+@role_required("MANAGER", "SUPERVISOR", "SERVICE_PERSON")
 def create_work_order():
     data = request.get_json() or {}
     machine_id = data.get("machine_id")
@@ -44,7 +46,7 @@ def create_work_order():
     return make_success(wo, status_code=201)
 
 @maintenance_v1_bp.route("/maintenance/<string:wo_id>/status", methods=["PATCH"])
-@jwt_required()
+@role_required("SERVICE_PERSON", "MANAGER")
 def update_work_order_status(wo_id):
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "service", "role": "SERVICE_PERSON"}

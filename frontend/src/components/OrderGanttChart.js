@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
 const STATUS_COLORS = {
-  COMPLETED: "#10b981", // green
-  RUNNING: "#0284c7",   // industrial blue
-  REASSIGNED: "#d97706", // amber/orange reassigned alert
-  QUEUED: "#64748b",    // slate
-  BLOCKED: "#ef4444"    // red
+  COMPLETED: "#15803d",  // green
+  RUNNING: "#16a34a",    // green
+  REASSIGNED: "#2563eb", // blue reassigned
+  QUEUED: "#64748b",     // slate
+  BLOCKED: "#dc2626",    // red blocked
+  FAILED: "#dc2626"      // red failure
 };
 
 const ZOOM_CONFIGS = {

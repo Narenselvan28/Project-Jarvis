@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import FactoryPage from "./pages/FactoryPage";
+import OrdersPage from "./pages/OrdersPage";
 import GanttPage from "./pages/GanttPage";
-import PlanningPage from "./pages/PlanningPage";
-import SupervisorPlansPage from "./pages/SupervisorPlansPage";
 import MaintenancePage from "./pages/MaintenancePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import SimulationPage from "./pages/SimulationPage";
 import AuditLogPage from "./pages/AuditLogPage";
-import BookingReportPage from "./pages/BookingReportPage";
 import api from "./services/api";
 
 export default function App() {
@@ -25,8 +25,10 @@ export default function App() {
         setUser(JSON.parse(savedUser));
         api.get("/auth/me")
           .then((res) => {
-            setUser(res.data.user);
-            localStorage.setItem("user", JSON.stringify(res.data.user));
+            if (res.data?.user) {
+              setUser(res.data.user);
+              localStorage.setItem("user", JSON.stringify(res.data.user));
+            }
           })
           .catch(() => {
             localStorage.removeItem("access_token");
@@ -44,13 +46,43 @@ export default function App() {
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
     setUser(null);
   };
 
   if (checkingAuth) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", color: "#714b67", fontFamily: "sans-serif", fontSize: "0.875rem", fontWeight: 600 }}>
-        <i className="fa-solid fa-spinner fa-spin mr-2"></i> Initializing Fixoria Adaptive Platform...
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#f8fafc",
+        color: "#0f172a",
+        fontFamily: "Inter, -apple-system, sans-serif"
+      }}>
+        <div style={{
+          width: "42px",
+          height: "42px",
+          borderRadius: "8px",
+          background: "#0f172a",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#ffffff",
+          fontWeight: 800,
+          fontSize: "1.2rem",
+          marginBottom: "1rem"
+        }}>
+          RF
+        </div>
+        <div style={{ fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>ReFlow</div>
+        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.25rem" }}>
+          Initializing Adaptive Production Intelligence...
+        </div>
       </div>
     );
   }
@@ -62,19 +94,24 @@ export default function App() {
           path="/login"
           element={user ? <Navigate to="/factory" replace /> : <LoginPage onLoginSuccess={(u) => setUser(u)} />}
         />
+        <Route
+          path="/signup"
+          element={user ? <Navigate to="/factory" replace /> : <SignupPage onSignupSuccess={(u) => setUser(u)} />}
+        />
 
-        {/* ALL OPERATIONAL PAGES EMBEDDED IN FIXORIA APP LAYOUT */}
+        {/* PROTECTED ENTERPRISE ROUTES IN REFLOW APP LAYOUT */}
         <Route element={user ? <AppLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
           <Route path="/factory" element={<FactoryPage user={user} />} />
+          <Route path="/orders" element={<OrdersPage user={user} />} />
+          <Route path="/orders/:orderId" element={<OrdersPage user={user} />} />
+          <Route path="/schedule" element={<GanttPage user={user} />} />
+          <Route path="/schedule/:orderId" element={<GanttPage user={user} />} />
           <Route path="/orders/:orderId/gantt" element={<GanttPage user={user} />} />
-          <Route path="/gantt" element={<GanttPage user={user} />} />
-          <Route path="/planning" element={<PlanningPage user={user} />} />
-          <Route path="/supervisor/plans" element={<SupervisorPlansPage user={user} />} />
           <Route path="/maintenance" element={<MaintenancePage user={user} />} />
           <Route path="/analytics" element={<AnalyticsPage user={user} />} />
-          <Route path="/audit-logs" element={<AuditLogPage user={user} />} />
-          <Route path="/booking-report" element={<BookingReportPage />} />
-          <Route path="/report" element={<BookingReportPage />} />
+          <Route path="/simulation" element={<SimulationPage user={user} />} />
+          <Route path="/audit" element={<AuditLogPage user={user} />} />
+          <Route path="/audit-logs" element={<Navigate to="/audit" replace />} />
           <Route path="*" element={<Navigate to="/factory" replace />} />
         </Route>
       </Routes>

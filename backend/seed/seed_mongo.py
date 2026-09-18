@@ -21,7 +21,7 @@ def seed_mongo():
             "username": "manager",
             "password_hash": generate_password_hash("password123"),
             "role": "MANAGER",
-            "email": "manager@jarvis-factory.com",
+            "email": "manager@reflow.io",
             "full_name": "Elena Vance (Plant Director)",
             "created_at": datetime.utcnow().isoformat()
         },
@@ -30,7 +30,7 @@ def seed_mongo():
             "username": "supervisor",
             "password_hash": generate_password_hash("password123"),
             "role": "SUPERVISOR",
-            "email": "supervisor@jarvis-factory.com",
+            "email": "supervisor@reflow.io",
             "full_name": "Marcus Vance (Shift Lead)",
             "created_at": datetime.utcnow().isoformat()
         },
@@ -39,7 +39,7 @@ def seed_mongo():
             "username": "service",
             "password_hash": generate_password_hash("password123"),
             "role": "SERVICE_PERSON",
-            "email": "service@jarvis-factory.com",
+            "email": "service@reflow.io",
             "full_name": "Viktor Stone (Senior Technician)",
             "created_at": datetime.utcnow().isoformat()
         }
@@ -169,6 +169,12 @@ def seed_mongo():
         m["current_order_id"] = "ORD-1042" if m["id"] == "CUT-02" else None
         m["current_operation_id"] = "OP-1042-03" if m["id"] == "CUT-02" else None
         m["compatible_processes"] = [m["process_id"]]
+        # Deterministic factory grid layout coordinates
+        m["grid_row"] = 1 if m["lane_id"] == "L01" else (2 if m["lane_id"] == "L02" else 3)
+        try:
+            m["grid_column"] = int(m["process_id"].replace("P", ""))
+        except Exception:
+            m["grid_column"] = 1
 
     db.machines.insert_many(machines_data)
     print(f"[Seed] Created {len(machines_data)} individually addressable machines.")

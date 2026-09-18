@@ -53,7 +53,7 @@ class SchedulingService:
         active = schedule_repo.get_active()
         meta = active.get("metadata", {}) if active else {}
         comparisons["ADAPTIVE_CP_SAT"] = {
-            "algorithm": "Adaptive ML + OR-Tools CP-SAT (ARIVON)",
+            "algorithm": "Adaptive ML + OR-Tools CP-SAT (ReFlow)",
             "makespan_minutes": meta.get("makespan_minutes", 1240.0),
             "makespan_hours": round(meta.get("makespan_minutes", 1240.0) / 60.0, 2),
             "total_tardiness_minutes": meta.get("total_tardiness_minutes", 0.0),

@@ -1,52 +1,58 @@
 :root {
-  /* Fixoria / Arivon Executive Palette */
-  --bg-primary: #f9fafb;
+  /* ReFlow Production Industrial Light Palette */
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
+  --bg-surface: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
-  --bg-subtle: #f4ebf1;
+  --bg-card-hover: #f1f5f9;
+  --bg-subtle: #f8fafc;
   --bg-input: #ffffff;
 
   /* Borders & Dividers */
-  --border-color: #e5e7eb;
-  --border-subtle: #f3f4f6;
-  --border-accent: #714b67;
+  --border-color: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-accent: #1e293b;
 
   /* Typography */
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
   --text-inverse: #ffffff;
 
-  /* Primary Brand (Odoo Plum) */
-  --primary: #714b67;
-  --primary-hover: #5c3d54;
-  --primary-light: #f4ebf1;
+  /* ReFlow Primary Brand (Industrial Navy) */
+  --primary: #1e293b;
+  --primary-hover: #0f172a;
+  --primary-light: #f1f5f9;
+  --accent-blue: #2563eb;
+  --accent-teal: #0d9488;
 
-  /* Machine & Operational State Colors */
-  --status-available: #10b981;  /* Emerald */
-  --status-running: #0284c7;    /* Sky */
-  --status-idle: #6b7280;       /* Slate */
-  --status-setup: #d97706;      /* Amber */
-  --status-blocked: #ea580c;    /* Orange */
-  --status-failed: #e11d48;     /* Crimson */
-  --status-maintenance: #db2777;/* Rose */
-  --status-repaired: #7c3aed;   /* Violet */
-  --status-verified: #2563eb;   /* Blue */
-  --status-reassigned: #0d9488; /* Teal */
+  /* Centralized Operational Status Colors (Section 14) */
+  --status-running: #16a34a;       /* GREEN */
+  --status-available: #0d9488;     /* GREEN / NEUTRAL TEAL */
+  --status-idle: #64748b;          /* GRAY */
+  --status-setup: #d97706;         /* AMBER */
+  --status-blocked: #ea580c;       /* ORANGE */
+  --status-failed: #dc2626;        /* RED */
+  --status-maintenance: #7c3aed;   /* PURPLE / GRAY */
+  --status-reassigned: #2563eb;    /* BLUE */
+  --status-repaired: #0d9488;      /* TEAL */
+  --status-verified: #059669;      /* GREEN */
+  --status-completed: #15803d;     /* GREEN */
+  --status-delayed: #dc2626;       /* RED / ORANGE */
 
   /* Priority Accents */
-  --priority-urgent: #e11d48;
+  --priority-urgent: #dc2626;
   --priority-high: #ea580c;
+  --priority-normal: #2563eb;
   --priority-medium: #d97706;
-  --priority-low: #10b981;
+  --priority-low: #0d9488;
 
   /* Typography Fonts */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
 
-  /* Layout Constants */
-  --sidebar-width: 260px;
+  /* Layout Dimensions */
+  --sidebar-expanded: 260px;
+  --sidebar-collapsed: 72px;
   --topbar-height: 56px;
-  --demobar-height: 44px;
 }

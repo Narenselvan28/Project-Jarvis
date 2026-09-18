@@ -82,5 +82,5 @@ def create_app(config_class=Config):
 if __name__ == "__main__":
     app = create_app()
     port = int(os.getenv("PORT", 5000))
-    print(f"[Server] Starting ARIVON Platform on port {port}...")
+    print(f"[Server] Starting ReFlow Platform on port {port}...")
     socketio.run(app, host="0.0.0.0", port=port, debug=True, allow_unsafe_werkzeug=True)

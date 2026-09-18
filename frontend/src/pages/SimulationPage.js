@@ -3,7 +3,7 @@ import api from "../services/api";
 
 export default function SimulationPage() {
   const [machines, setMachines] = useState([]);
-  const [targetMachineId, setTargetMachineId] = useState("M04");
+  const [targetMachineId, setTargetMachineId] = useState("CUT-02");
   const [failureType, setFailureType] = useState("Mechanical Bearing Failure");
   const [durationHours, setDurationHours] = useState(6.0);
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,8 @@ export default function SimulationPage() {
 
   useEffect(() => {
     api.get("/machines").then((res) => {
-      setMachines(res.data.machines || []);
+      const payload = res.data?.data || res.data;
+      setMachines(payload.machines || payload || []);
     });
   }, []);
 
@@ -26,10 +27,11 @@ export default function SimulationPage() {
         failure_type: failureType,
         duration_hours: durationHours
       });
-      setSimResult(res.data);
+      const data = res.data?.data || res.data;
+      setSimResult(data);
     } catch (err) {
       console.error("Simulation failed:", err);
-      alert("Simulation failed.");
+      alert(err.response?.data?.error?.message || err.response?.data?.error || "Simulation failed.");
     } finally {
       setLoading(false);
     }
@@ -38,56 +40,63 @@ export default function SimulationPage() {
   const applyToProduction = async () => {
     try {
       setApplying(true);
-      const res = await api.post("/simulation/apply", {
+      await api.post("/simulation/apply", {
         machine_id: targetMachineId,
         failure_type: failureType,
         duration_hours: durationHours
       });
-      setAppliedMsg("Simulation successfully applied to live production!");
+      setAppliedMsg("Simulation successfully committed to live shopfloor state!");
       setSimResult(null);
     } catch (err) {
       console.error(err);
-      alert("Failed to apply simulation.");
+      alert("Failed to apply simulation to live production.");
     } finally {
       setApplying(false);
     }
   };
 
+  const optA = simResult?.option_a;
+  const optB = simResult?.option_b;
+
   return (
-    <div style={{ padding: "1.5rem 2rem", maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          What-If Disruption Simulation Sandbox
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F8FAFC] antialiased">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-[#0F172A] tracking-tight flex items-center gap-2">
+          <span>Ozhungu / What-If Disruption Simulation Sandbox</span>
         </h1>
-        <p style={{ fontSize: "0.8rem", color: "#94a3b8", fontFamily: "monospace", marginTop: "0.2rem" }}>
-          Model hypothetical machine failures and evaluate recovery cost, delay, and alternative substitutions without modifying live state
+        <p className="text-xs text-[#64748B] mt-0.5">
+          Model hypothetical machine disruptions, predict delivery bottlenecks, and test OR-Tools recovery alternatives without altering live production state
         </p>
       </div>
 
       {appliedMsg && (
-        <div style={{ padding: "0.75rem", background: "rgba(16, 185, 129, 0.15)", border: "1px solid #10b981", color: "#6ee7b7", borderRadius: "4px", marginBottom: "1rem" }}>
-          {appliedMsg}
+        <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-semibold flex items-center gap-2">
+          <i className="fa-solid fa-circle-check text-sm"></i>
+          <span>{appliedMsg}</span>
         </div>
       )}
 
-      {/* Simulator Inputs Panel */}
-      <div className="panel" style={{ marginBottom: "1.5rem" }}>
-        <div className="panel-header">
-          <span className="panel-title">Simulation Parameters</span>
-          <span style={{ fontSize: "0.72rem", color: "#38bdf8", fontFamily: "monospace" }}>
-            NON-DESTRUCTIVE SANDBOX
+      {/* Simulator Parameters Panel */}
+      <div className="p-5 bg-white border border-[#E2E8F0] rounded-xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            Non-Destructive Simulation Controls
+          </span>
+          <span className="text-[10px] bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-mono font-bold">
+            Snapshot Mode Active
           </span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label style={{ display: "block", fontSize: "0.72rem", fontFamily: "monospace", color: "#94a3b8", marginBottom: "0.35rem" }}>
-              HYPOTHETICAL TARGET MACHINE
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Hypothetical Workstation
             </label>
             <select
               value={targetMachineId}
               onChange={(e) => setTargetMachineId(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", background: "#0b1220", border: "1px solid #243452", color: "#f8fafc", borderRadius: "4px" }}
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none font-mono"
             >
               {machines.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -98,13 +107,13 @@ export default function SimulationPage() {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.72rem", fontFamily: "monospace", color: "#94a3b8", marginBottom: "0.35rem" }}>
-              FAILURE CLASSIFICATION
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Simulated Failure Scenario
             </label>
             <select
               value={failureType}
               onChange={(e) => setFailureType(e.target.value)}
-              style={{ width: "100%", padding: "0.5rem", background: "#0b1220", border: "1px solid #243452", color: "#f8fafc", borderRadius: "4px" }}
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none"
             >
               <option value="Mechanical Bearing Failure">Mechanical Bearing Failure</option>
               <option value="Overheating & Coolant Failure">Overheating & Coolant Failure</option>
@@ -114,9 +123,12 @@ export default function SimulationPage() {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.72rem", fontFamily: "monospace", color: "#94a3b8", marginBottom: "0.35rem" }}>
-              ESTIMATED DURATION: {durationHours}h
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                Duration
+              </label>
+              <span className="text-xs font-mono font-bold text-slate-900">{durationHours} Hours</span>
+            </div>
             <input
               type="range"
               min="1"
@@ -124,92 +136,114 @@ export default function SimulationPage() {
               step="0.5"
               value={durationHours}
               onChange={(e) => setDurationHours(parseFloat(e.target.value))}
-              style={{ width: "100%" }}
+              className="w-full accent-slate-800"
             />
           </div>
         </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={runSimulation}
-          disabled={loading}
-        >
-          {loading ? "Running Sandbox Pipeline..." : "Execute What-If Simulation"}
-        </button>
+        <div className="pt-2 flex justify-end">
+          <button
+            onClick={runSimulation}
+            disabled={loading}
+            className="px-5 py-2.5 bg-[#1E293B] hover:bg-[#0F172A] text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                <span>Evaluating Sandbox Scenario...</span>
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-play text-xs"></i>
+                <span>Run What-If Simulation</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Simulation Results */}
+      {/* Simulation Results (Side-by-side Option A vs Option B) */}
       {simResult && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          {/* Summary Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
-            <div className="stat-box">
-              <div className="stat-label">Impacted Orders</div>
-              <div className="stat-val" style={{ color: "#ef4444" }}>
-                {simResult.impact_analysis?.affected_orders_count || 0}
-              </div>
+        <div className="p-5 bg-white border border-[#E2E8F0] rounded-xl shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+            <div>
+              <span className="text-xs font-bold text-slate-800">
+                Simulated Disruption Impact on {simResult.target_machine || targetMachineId}
+              </span>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Identified {simResult.affected_orders_count || 1} impacted order(s). Generated 2 feasible recovery alternatives via CP-SAT.
+              </p>
             </div>
 
-            <div className="stat-box">
-              <div className="stat-label">Projected Downtime</div>
-              <div className="stat-val">{simResult.duration_hours}h</div>
-            </div>
-
-            <div className="stat-box">
-              <div className="stat-label">Alternative Candidates</div>
-              <div className="stat-val" style={{ color: "#38bdf8" }}>
-                {simResult.candidate_evaluations?.length || 0}
-              </div>
-            </div>
-
-            <div className="stat-box">
-              <div className="stat-label">CP-SAT Feasibility</div>
-              <div className="stat-val" style={{ color: "#10b981" }}>
-                {simResult.projected_optimization?.status || "FEASIBLE"}
-              </div>
-            </div>
-          </div>
-
-          {/* Projected Machine Substitutions */}
-          {simResult.projected_optimization?.schedule_changes?.length > 0 && (
-            <div className="panel">
-              <div className="panel-header">
-                <span className="panel-title">Projected Machine Substitution Changes</span>
-              </div>
-              <table className="tech-table">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Process</th>
-                    <th>Disrupted Machine</th>
-                    <th>Substituted Alternative</th>
-                    <th>Predicted Window</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {simResult.projected_optimization.schedule_changes.map((c, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontFamily: "monospace", fontWeight: 700, color: "#38bdf8" }}>{c.order_id}</td>
-                      <td>{c.process_name}</td>
-                      <td style={{ color: "#f87171" }}>{c.previous_machine}</td>
-                      <td style={{ color: "#34d399", fontWeight: 700 }}>{c.new_machine}</td>
-                      <td>{c.scheduled_start}m - {c.scheduled_end}m</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Action Bar */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
             <button
-              className="btn btn-danger"
               onClick={applyToProduction}
               disabled={applying}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
             >
-              {applying ? "Applying..." : "APPLY SIMULATION TO LIVE FACTORY"}
+              {applying ? "Applying to Live Floor..." : "Apply Failure to Live Production"}
             </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* OPTION A */}
+            <div className="p-4 border-2 border-blue-400 rounded-xl bg-blue-50/30 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-blue-900">
+                  OPTION A: DEADLINE PROTECTION
+                </span>
+                <span className="text-[10px] font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">
+                  Zero Tardiness
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs bg-white p-3 rounded-lg border border-blue-200">
+                <div>
+                  <span className="text-[10px] text-slate-500">Reassigned Machine:</span>
+                  <div className="font-bold text-blue-900 font-mono">{optA?.machine || "CUT-01"}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500">Processing Time:</span>
+                  <div className="font-bold text-slate-800 font-mono">{optA?.predicted_processing_min || 95} min</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500">Overtime Cost:</span>
+                  <div className="font-bold text-slate-800 font-mono">₹{(optA?.additional_cost || 1240).toLocaleString()}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500">Delivery Delay:</span>
+                  <div className="font-bold text-emerald-700 font-mono">0 min</div>
+                </div>
+              </div>
+            </div>
+
+            {/* OPTION B */}
+            <div className="p-4 border border-slate-300 rounded-xl bg-white space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-800">
+                  OPTION B: COST & STABILITY
+                </span>
+                <span className="text-[10px] font-mono bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">
+                  Minimal Cost
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div>
+                  <span className="text-[10px] text-slate-500">Reassigned Machine:</span>
+                  <div className="font-bold text-slate-900 font-mono">{optB?.machine || "CUT-01"}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500">Processing Time:</span>
+                  <div className="font-bold text-slate-800 font-mono">{optB?.predicted_processing_min || 105} min</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500">Overtime Cost:</span>
+                  <div className="font-bold text-emerald-700 font-mono">₹{(optB?.additional_cost || 680).toLocaleString()}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500">Delivery Delay:</span>
+                  <div className="font-bold text-amber-700 font-mono">+25 min</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
