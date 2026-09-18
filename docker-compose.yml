@@ -1,39 +1,39 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: aps_mysql
+  mongodb:
+    image: mongo:7.0
+    container_name: arivon_mongodb
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: adaptive_factory
+      MONGO_INITDB_DATABASE: production_planning
     ports:
-      - "3307:3306"
+      - "27017:27017"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mongo_data:/data/db
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     build: .
-    container_name: aps_backend
+    container_name: arivon_backend
+    restart: always
     environment:
-      - DB_DRIVER=mysql
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=rootpassword
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_DB=adaptive_factory
-      - SECRET_KEY=adaptive-scheduling-secret-key-prod-2026
-      - JWT_SECRET_KEY=jwt-super-secret-scheduling-key-2026
+      - APP_ENV=production
+      - MONGO_URI=mongodb://mongodb:27017/production_planning
+      - MONGO_DB_NAME=production_planning
+      - SECRET_KEY=arivon-production-secret-key-2026
+      - JWT_SECRET_KEY=arivon-jwt-secret-key-2026
       - CP_SAT_TIME_LIMIT_SECONDS=30
     ports:
       - "5000:5000"
     depends_on:
-      mysql:
+      mongodb:
         condition: service_healthy
 
 volumes:
-  mysql_data:
+  mongo_data:

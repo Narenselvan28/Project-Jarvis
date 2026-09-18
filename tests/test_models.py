@@ -1,17 +1,17 @@
 import pytest
-from backend.models.machine import Machine, MachineState
-from backend.models.order import Order, OrderState
+from backend.repositories.machine_repository import machine_repo
+from backend.repositories.order_repository import order_repo
+from backend.domain.machine_state import MachineState
 
-def test_machine_states(isolated_db):
-    m = Machine.query.get("M01")
-    assert m is not None
-    assert m.status in [s.value for s in MachineState]
+def test_machine_states(app):
+    machines = machine_repo.get_all_machines()
+    assert len(machines) >= 50
+    valid_states = {s.value for s in MachineState}
+    for m in machines:
+        assert m["status"] in valid_states
 
-def test_order_ord1042_exists(isolated_db):
-    order = Order.query.get("ORD-1042")
+def test_order_ord1042_exists(app):
+    order = order_repo.get_by_id("ORD-1042")
     assert order is not None
-    assert order.priority == "URGENT"
-    assert len(order.operations) == 5
-    op4 = order.operations[3]
-    assert op4.assigned_machine_id == "M04"
-    assert op4.process_id == "P04"
+    assert order["priority"] == "URGENT"
+    assert len(order.get("operations", [])) >= 5

@@ -1,0 +1,12 @@
+{
+  "dataset_type": "DEMONSTRATION_SYNTHETIC_DATA",
+  "generated_at": "2026-09-18T23:19:09.152078",
+  "random_seed": 42,
+  "sample_count": 1600,
+  "processing_time_records": 1600,
+  "telemetry_records": 1600,
+  "files": {
+    "cycle_times": "D:\\Studies\\Project - Jarvis\\backend\\data\\demo\\demo_cycle_times.csv",
+    "telemetry": "D:\\Studies\\Project - Jarvis\\backend\\data\\demo\\demo_failure_telemetry.csv"
+  }
+}

@@ -1,62 +1,49 @@
-from datetime import datetime
-from backend.extensions import db
-from backend.models.machine import Machine, MachineState, MachineStatusHistory
-from backend.models.audit_log import AuditLog
-from backend.services.websocket_service import websocket_service
+"""
+Machine Domain Service (Pure MongoDB & State Machine)
+"""
 
-ALLOWED_TRANSITIONS = {
-    MachineState.AVAILABLE.value: [MachineState.SETUP.value, MachineState.RUNNING.value, MachineState.IDLE.value, MachineState.FAILED.value],
-    MachineState.SETUP.value: [MachineState.RUNNING.value, MachineState.IDLE.value, MachineState.FAILED.value],
-    MachineState.RUNNING.value: [MachineState.IDLE.value, MachineState.AVAILABLE.value, MachineState.FAILED.value],
-    MachineState.IDLE.value: [MachineState.SETUP.value, MachineState.RUNNING.value, MachineState.AVAILABLE.value, MachineState.FAILED.value],
-    MachineState.FAILED.value: [MachineState.MAINTENANCE.value, MachineState.REPAIRED.value],
-    MachineState.MAINTENANCE.value: [MachineState.REPAIRED.value, MachineState.FAILED.value],
-    MachineState.REPAIRED.value: [MachineState.VERIFIED.value, MachineState.MAINTENANCE.value],
-    MachineState.VERIFIED.value: [MachineState.AVAILABLE.value, MachineState.RUNNING.value],
-    MachineState.REASSIGNED.value: [MachineState.AVAILABLE.value, MachineState.RUNNING.value]
-}
+from typing import Dict, Any, Tuple
+from backend.repositories.machine_repository import machine_repo
+from backend.repositories.audit_repository import audit_repo
+from backend.domain.machine_state import MachineStateMachine
+from backend.domain.errors import InvalidStateTransitionError, MachineUnavailableError, ResourceNotFoundError
+from backend.services.websocket_service import websocket_service
 
 class MachineService:
     @staticmethod
-    def update_machine_status(machine_id, new_status, reason=None, user_id=None, username=None):
-        machine = Machine.query.get(machine_id)
+    def update_machine_status(
+        machine_id: str,
+        new_status: str,
+        user_role: str = "MANAGER",
+        reason: str = "Manual status update",
+        user_id: str = "SYSTEM",
+        username: str = "System"
+    ) -> Tuple[bool, Dict[str, Any]]:
+        machine = machine_repo.get_by_id(machine_id)
         if not machine:
-            raise ValueError(f"Machine {machine_id} not found")
+            raise ResourceNotFoundError("Machine", machine_id)
 
-        old_status = machine.status
+        old_status = machine.get("status", "AVAILABLE")
+        validated_target = MachineStateMachine.validate_and_transition(old_status, new_status, role=user_role)
 
-        # Validate transition if not an emergency override
-        valid_next = ALLOWED_TRANSITIONS.get(old_status, [])
-        if new_status not in valid_next and new_status != MachineState.FAILED.value:
-            # Allow admin overrides with logging
-            print(f"[MachineService] Non-standard transition {old_status} -> {new_status} allowed with override")
+        # Update in MongoDB
+        machine_repo.update_status(machine_id, validated_target)
+        updated = machine_repo.get_by_id(machine_id)
 
-        machine.status = new_status
-        machine.updated_at = datetime.utcnow()
-
-        # Record status history
-        history = MachineStatusHistory(
-            machine_id=machine.id,
-            old_status=old_status,
-            new_status=new_status,
-            reason=reason or f"Status changed to {new_status}"
-        )
-        db.session.add(history)
-
-        # Record audit log
-        audit = AuditLog(
-            user_id=user_id,
-            username=username or "SYSTEM",
+        # Audit event
+        audit_repo.record_event(
             action="MACHINE_STATUS_CHANGED",
-            entity_type="MACHINE",
+            actor=username,
+            role=user_role,
+            entity="MACHINE",
             entity_id=machine_id,
-            details_json=f'{{"old_status": "{old_status}", "new_status": "{new_status}", "reason": "{reason or ""}"}}'
+            before={"status": old_status},
+            after={"status": validated_target},
+            metadata={"reason": reason}
         )
-        db.session.add(audit)
-        db.session.commit()
 
-        # Emit websocket
-        websocket_service.notify_machine_status_changed(machine.to_dict())
-        return machine
+        # Emit WebSocket
+        websocket_service.notify_machine_status_changed(updated)
+        return True, updated
 
 machine_service = MachineService()

@@ -42,6 +42,7 @@ class ProcessingTimePredictor:
         return {
             "predicted_processing_time": pred,
             "feature_contributions": contributions,
+            "explainability": contributions,
             "features_used": feats
         }
 

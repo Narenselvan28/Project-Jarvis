@@ -19,7 +19,8 @@ export default function Navigation({ user, onLogout }) {
     { label: "Supervisor Plans", path: "/supervisor/plans" },
     { label: "Maintenance", path: "/maintenance" },
     { label: "Analytics", path: "/analytics" },
-    { label: "Audit Logs", path: "/audit-logs" }
+    { label: "Audit Logs", path: "/audit-logs" },
+    { label: "Booking Report", path: "/booking-report" }
   ];
 
   return (

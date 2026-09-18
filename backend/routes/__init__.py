@@ -13,8 +13,17 @@ from backend.routes.materials import materials_bp
 from backend.routes.analytics import analytics_bp
 from backend.routes.simulation import simulation_bp
 from backend.routes.audit_logs import audit_bp
+from backend.routes.health import health_bp
+from backend.routes.v1 import register_v1_blueprints
 
 def register_blueprints(app):
+    # 1. Health & readiness probes (/health, /ready)
+    app.register_blueprint(health_bp)
+
+    # 2. V1 Versioned REST Endpoints (/api/v1/...)
+    register_v1_blueprints(app)
+
+    # 3. Backward-compatible route aliases (/api/...)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(machines_bp)

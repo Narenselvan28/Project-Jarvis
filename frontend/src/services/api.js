@@ -17,9 +17,21 @@ api.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// Global response interceptor for 401 Unauthorized
+// Global response interceptor for 401 Unauthorized & Envelope Compatibility
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Graceful envelope unpacker: supports both {success: true, data: {...}} and raw payloads
+    if (response.data && response.data.success === true && response.data.data !== undefined) {
+      if (typeof response.data.data === "object" && response.data.data !== null && !Array.isArray(response.data.data)) {
+        Object.keys(response.data.data).forEach((key) => {
+          if (!(key in response.data)) {
+            response.data[key] = response.data.data[key];
+          }
+        });
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response && error.response.status === 401) {
       // Clear token and redirect to login if session expired

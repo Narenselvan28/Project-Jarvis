@@ -1,122 +1,62 @@
 import os
 import sys
 
-# Add project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+import mongomock
 from backend.app import create_app
 from backend.config import Config
-from backend.extensions import db
-from backend.seed.seed_database import seed
+from backend.database.mongo import MongoDBManager
+from backend.seed.seed_mongo import seed_mongo
 
 class TestConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    MONGO_URI = "mock://test_db"
+    MONGO_DB_NAME = "test_production_planning"
 
-@pytest.fixture(autouse=True)
-def isolated_db():
+@pytest.fixture(scope="session", autouse=True)
+def init_test_env():
+    # Ensure models are trained for tests
+    from backend.ml.training import train_all_models
+    if not os.path.exists(Config.PROCESSING_TIME_MODEL_PATH) or not os.path.exists(Config.FAILURE_RISK_MODEL_PATH):
+        train_all_models()
+
+@pytest.fixture
+def app():
     app = create_app(TestConfig)
     with app.app_context():
-        db.create_all()
-        # Seed test data
-        from backend.seed import seed_database
-        # Run seed in this app context
-        seed_database.db = db
-        # Call seeding logic directly
-        from backend.models import (
-            User, Role, Lane, Process, Machine, MachineState, MachineCapability,
-            Product, Material, Worker, WorkerSkill, Order, OrderOperation,
-            OrderPriority, OrderState, Schedule
-        )
-
-        u_mgr = User(username="manager", email="mgr@test.com", full_name="Manager", role=Role.MANAGER.value)
-        u_mgr.set_password("password123")
-        u_sup = User(username="supervisor", email="sup@test.com", full_name="Supervisor", role=Role.SUPERVISOR.value)
-        u_sup.set_password("password123")
-        u_srv = User(username="service", email="srv@test.com", full_name="Service Person", role=Role.SERVICE_PERSON.value)
-        u_srv.set_password("password123")
-        db.session.add_all([u_mgr, u_sup, u_srv])
-
-        # Lane & Processes
-        l1 = Lane(id="L01", name="Lane 1", sequence=1)
-        l2 = Lane(id="L02", name="Lane 2", sequence=2)
-        l3 = Lane(id="L03", name="Lane 3", sequence=3)
-        db.session.add_all([l1, l2, l3])
-
-        p1 = Process(id="P01", name="Cutting", sequence_index=1)
-        p2 = Process(id="P02", name="Forming", sequence_index=2)
-        p3 = Process(id="P03", name="Machining", sequence_index=3)
-        p4 = Process(id="P04", name="Finishing", sequence_index=4)
-        p5 = Process(id="P05", name="Inspection", sequence_index=5)
-        db.session.add_all([p1, p2, p3, p4, p5])
-
-        # Machines
-        m01 = Machine(id="M01", name="Machine 1", lane_id="L01", process_id="P01", status="RUNNING", precision_level="HIGH", hourly_rate=1200, svg_x=100, svg_y=100)
-        m02 = Machine(id="M02", name="Machine 2", lane_id="L01", process_id="P02", status="RUNNING", precision_level="HIGH", hourly_rate=1200, svg_x=200, svg_y=100)
-        m03 = Machine(id="M03", name="Machine 3", lane_id="L01", process_id="P03", status="RUNNING", precision_level="HIGH", hourly_rate=1200, svg_x=300, svg_y=100)
-        m04 = Machine(id="M04", name="Machine 4", lane_id="L01", process_id="P04", status="RUNNING", precision_level="HIGH", hourly_rate=1200, svg_x=400, svg_y=100)
-        m05 = Machine(id="M05", name="Machine 5", lane_id="L01", process_id="P05", status="AVAILABLE", precision_level="HIGH", hourly_rate=1200, svg_x=500, svg_y=100)
-        m09 = Machine(id="M09", name="Machine 9", lane_id="L02", process_id="P04", status="AVAILABLE", precision_level="HIGH", hourly_rate=1200, svg_x=400, svg_y=200)
-        m14 = Machine(id="M14", name="Machine 14", lane_id="L03", process_id="P04", status="AVAILABLE", precision_level="HIGH", hourly_rate=1200, svg_x=400, svg_y=300)
-        db.session.add_all([m01, m02, m03, m04, m05, m09, m14])
-
-        cap4_9 = MachineCapability(machine_id="M09", process_id="P04", precision_level="HIGH", setup_overhead_min=10)
-        cap4_14 = MachineCapability(machine_id="M14", process_id="P04", precision_level="HIGH", setup_overhead_min=15)
-        db.session.add_all([cap4_9, cap4_14])
-
-        # Product & Order
-        prd = Product(code="PRD-TURBINE-BLADE", name="Turbine Blade", required_precision="HIGH")
-        db.session.add(prd)
-        db.session.flush()
-
-        order = Order(id="ORD-1042", product_id=prd.id, quantity=50, priority="URGENT", status="RUNNING", deadline_hours=12.0, assigned_lane_id="L01")
-        db.session.add(order)
-        db.session.flush()
-
-        op1 = OrderOperation(order_id="ORD-1042", sequence=1, process_id="P01", assigned_machine_id="M01", status="COMPLETED", scheduled_start_min=0, scheduled_end_min=50, processing_time_min=50)
-        op2 = OrderOperation(order_id="ORD-1042", sequence=2, process_id="P02", assigned_machine_id="M02", status="COMPLETED", scheduled_start_min=50, scheduled_end_min=100, processing_time_min=50)
-        op3 = OrderOperation(order_id="ORD-1042", sequence=3, process_id="P03", assigned_machine_id="M03", status="COMPLETED", scheduled_start_min=100, scheduled_end_min=150, processing_time_min=50)
-        op4 = OrderOperation(order_id="ORD-1042", sequence=4, process_id="P04", assigned_machine_id="M04", status="RUNNING", scheduled_start_min=150, scheduled_end_min=210, processing_time_min=60)
-        op5 = OrderOperation(order_id="ORD-1042", sequence=5, process_id="P05", assigned_machine_id="M05", status="QUEUED", scheduled_start_min=210, scheduled_end_min=250, processing_time_min=40)
-        db.session.add_all([op1, op2, op3, op4, op5])
-        db.session.commit()
-
-        # Also populate Mongo collections for services using get_collection
-        from backend.database.mongo import get_collection
-        mach_coll = get_collection("machines")
-        for m in [m01, m02, m03, m04, m05, m09, m14]:
-            mach_coll.update_one(
-                {"id": m.id},
-                {"$set": {
-                    "id": m.id,
-                    "name": m.name,
-                    "lane_id": m.lane_id,
-                    "process_id": m.process_id,
-                    "status": m.status,
-                    "hourly_rate": m.hourly_rate,
-                    "x_position": m.svg_x,
-                    "y_position": m.svg_y,
-                    "capacity": 500,
-                    "unit": "pieces/hr",
-                    "compatible_processes": [m.process_id]
-                }},
-                upsert=True
-            )
-        order_coll = get_collection("orders")
-        order_coll.update_one({"id": "ORD-1042"}, {"$set": {"id": "ORD-1042", "product_id": prd.id, "priority": "URGENT", "status": "RUNNING", "deadline_hours": 12.0}}, upsert=True)
-        op_coll = get_collection("order_operations")
-        for op in [op1, op2, op3, op4, op5]:
-            op_coll.update_one({"order_id": op.order_id, "sequence": op.sequence}, {"$set": {
-                "id": f"OP-1042-0{op.sequence}",
-                "order_id": op.order_id,
-                "sequence": op.sequence,
-                "process_id": op.process_id,
-                "assigned_machine_id": op.assigned_machine_id,
-                "status": op.status,
-                "processing_time_min": op.processing_time_min
-            }}, upsert=True)
-
+        # Seed MongoDB test data
+        seed_mongo()
         yield app
-        db.session.remove()
-        db.drop_all()
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+@pytest.fixture
+def manager_token(client):
+    res = client.post("/api/v1/auth/login", json={"username": "manager", "password": "password123"})
+    if res.status_code != 200:
+        res = client.post("/api/auth/login", json={"username": "manager", "password": "password123"})
+    data = res.get_json()
+    token = data.get("data", {}).get("access_token") or data.get("access_token")
+    return token
+
+@pytest.fixture
+def supervisor_token(client):
+    res = client.post("/api/v1/auth/login", json={"username": "supervisor", "password": "password123"})
+    if res.status_code != 200:
+        res = client.post("/api/auth/login", json={"username": "supervisor", "password": "password123"})
+    data = res.get_json()
+    token = data.get("data", {}).get("access_token") or data.get("access_token")
+    return token
+
+@pytest.fixture
+def service_token(client):
+    res = client.post("/api/v1/auth/login", json={"username": "service", "password": "password123"})
+    if res.status_code != 200:
+        res = client.post("/api/auth/login", json={"username": "service", "password": "password123"})
+    data = res.get_json()
+    token = data.get("data", {}).get("access_token") or data.get("access_token")
+    return token

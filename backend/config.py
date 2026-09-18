@@ -7,6 +7,7 @@ load_dotenv()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
+    BASE_DIR = BASE_DIR
     SECRET_KEY = os.getenv("SECRET_KEY", "adaptive-scheduling-secret-key-prod-2026")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-super-secret-scheduling-key-2026")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRES_HOURS", "24")))

@@ -266,16 +266,20 @@ class DisruptionService:
             {"$set": {"status": "RUNNING"}}
         )
 
-        try:
-            from backend.models.order import OrderOperation, OrderState
-            from backend.extensions import db
-            for op_sql in OrderOperation.query.filter_by(assigned_machine_id=failed_machine_id).all():
-                op_sql.original_machine_id = failed_machine_id
-                op_sql.assigned_machine_id = selected_machine_id
-                op_sql.status = OrderState.REASSIGNED.value
-            db.session.commit()
-        except Exception:
-            pass
+        # Create a new Schedule Version: Version 3 (RECOVERY)
+        from backend.repositories.schedule_repository import schedule_repo
+        from backend.domain.schedule_versioning import ScheduleStatus, ScheduleType
+        all_ops = list(sched_coll.find({"order_id": {"$in": reassigned_orders}}, {"_id": 0}))
+        schedule_repo.save_schedule_version(
+            schedule_id=f"SCHED-REC-{disruption_id}",
+            version=3,
+            schedule_type=ScheduleType.RECOVERY.value,
+            reason=f"Disruption Recovery ({chosen_option.upper()}): Reassigned from {failed_machine_id} to {selected_machine_id}",
+            created_by=user.get("username", "manager") if isinstance(user, dict) else "manager",
+            parent_schedule_id=f"SCHED-{reassigned_orders[0]}-v1",
+            operations=all_ops,
+            status=ScheduleStatus.ACTIVE.value
+        )
 
         # Update newly assigned machine status to RUNNING if it was AVAILABLE/IDLE
         mach_coll.update_one(
@@ -294,14 +298,20 @@ class DisruptionService:
 
         # 4. Audit Log
         username = user.get("username", "manager") if isinstance(user, dict) else getattr(user, "username", "manager")
-        AuditLogDB.create(
-            user_id="USR-MGR-01",
-            username=username,
+        from backend.repositories.audit_repository import audit_repo
+        audit_repo.record_event(
+            action="RECOVERY_APPROVED",
+            actor=username,
             role="MANAGER",
-            machine_id=selected_machine_id,
-            old_status="AVAILABLE",
-            new_status="RUNNING",
-            reason=f"Approved {chosen_option.upper()} for disruption {disruption_id}: Reassigned from {failed_machine_id} to {selected_machine_id}."
+            entity="DISRUPTION",
+            entity_id=disruption_id,
+            before={"machine_id": failed_machine_id},
+            after={"machine_id": selected_machine_id},
+            metadata={
+                "approved_option": chosen_option.upper(),
+                "reassigned_machine": selected_machine_id,
+                "affected_orders": reassigned_orders
+            }
         )
 
         return {

@@ -112,16 +112,6 @@ class MachineDB:
             "updated_at": datetime.utcnow().isoformat()
         }})
 
-        try:
-            from backend.models.machine import Machine
-            from backend.extensions import db
-            m_sql = Machine.query.get(machine_id)
-            if m_sql:
-                m_sql.status = new_status
-                db.session.commit()
-        except Exception:
-            pass
-
         # Record audit log
         AuditLogDB.create(
             user_id=user_id or username,
@@ -242,22 +232,6 @@ class MaintenanceDB:
         get_collection("maintenance_work_orders").insert_one(doc)
         doc.pop("_id", None)
 
-        try:
-            from backend.models.maintenance import MaintenanceWorkOrder, MaintenanceStatus
-            from backend.extensions import db
-            wo_sql = MaintenanceWorkOrder(
-                work_order_number=wo_id,
-                machine_id=machine_id,
-                fault_type=fault_type,
-                priority=priority,
-                status=MaintenanceStatus.OPEN.value,
-                estimated_repair_hours=float(estimated_hours)
-            )
-            db.session.add(wo_sql)
-            db.session.commit()
-        except Exception:
-            pass
-
         return doc
 
     @staticmethod
@@ -281,18 +255,6 @@ class MaintenanceDB:
             updates["verified_at"] = datetime.utcnow().isoformat()
 
         get_collection("maintenance_work_orders").update_one({"id": work_order_id}, {"$set": updates})
-
-        try:
-            from backend.models.maintenance import MaintenanceWorkOrder
-            from backend.extensions import db
-            wo_sql = MaintenanceWorkOrder.query.get(work_order_id)
-            if wo_sql:
-                wo_sql.status = status.upper()
-                if notes:
-                    wo_sql.notes = notes
-                db.session.commit()
-        except Exception:
-            pass
 
         return get_collection("maintenance_work_orders").find_one({"id": work_order_id}, {"_id": 0})
 

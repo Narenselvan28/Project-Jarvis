@@ -6,8 +6,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from flask import Flask, jsonify
 from backend.config import Config
-from backend.extensions import db, jwt, socketio, migrate, cors
+from backend.extensions import jwt, socketio, cors
 from backend.routes import register_blueprints
+from backend.domain.errors import DomainError
 
 from bson import ObjectId
 from flask.json.provider import DefaultJSONProvider
@@ -25,31 +26,45 @@ def create_app(config_class=Config):
     app.json = MongoJSONProvider(app)
 
     # Initialize extensions
-    db.init_app(app)
     jwt.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
-    migrate.init_app(app, db)
     socketio.init_app(app)
 
-    # Register blueprints
+    # Register blueprints (both /api/v1/ and legacy /api/)
     register_blueprints(app)
 
-    # Global error handlers
+    # Domain & global error handlers
+    @app.errorhandler(DomainError)
+    def handle_domain_error(de):
+        return jsonify({
+            "success": False,
+            "error": {
+                "code": de.code,
+                "message": de.message,
+                "details": de.details
+            }
+        }), de.status_code
+
     @app.errorhandler(400)
     def bad_request(e):
-        return jsonify({"error": "Bad Request", "details": str(e)}), 400
+        return jsonify({
+            "success": False,
+            "error": {"code": "BAD_REQUEST", "message": "Bad Request", "details": str(e)}
+        }), 400
 
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({"error": "Resource Not Found"}), 404
+        return jsonify({
+            "success": False,
+            "error": {"code": "NOT_FOUND", "message": "Resource Not Found"}
+        }), 404
 
     @app.errorhandler(500)
     def internal_error(e):
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-
-    @app.route("/api/health", methods=["GET"])
-    def health():
-        return jsonify({"status": "healthy", "service": "Adaptive Scheduling Platform", "version": "1.0.0"}), 200
+        return jsonify({
+            "success": False,
+            "error": {"code": "INTERNAL_SERVER_ERROR", "message": "An unexpected server error occurred."}
+        }), 500
 
     # Auto ensure MongoDB seed data is present on startup
     with app.app_context():
@@ -67,5 +82,5 @@ def create_app(config_class=Config):
 if __name__ == "__main__":
     app = create_app()
     port = int(os.getenv("PORT", 5000))
-    print(f"[Server] Starting Adaptive Scheduling Platform on port {port}...")
+    print(f"[Server] Starting ARIVON Platform on port {port}...")
     socketio.run(app, host="0.0.0.0", port=port, debug=True, allow_unsafe_werkzeug=True)

@@ -1,83 +1,106 @@
-from datetime import datetime
-from backend.extensions import db
-from backend.models.maintenance import MaintenanceWorkOrder, MaintenanceStatus
-from backend.models.machine import Machine, MachineState
-from backend.models.audit_log import AuditLog
+"""
+Maintenance Work Order Service (Pure MongoDB)
+"""
+
+from typing import Dict, Any, Optional, List
+from backend.repositories.maintenance_repository import maintenance_repo
 from backend.services.machine_service import machine_service
 from backend.services.websocket_service import websocket_service
+from backend.domain.maintenance_workflow import MaintenanceWorkflow
+from backend.domain.errors import ResourceNotFoundError
 
 class MaintenanceService:
     @staticmethod
-    def create_work_order(machine_id, disruption_id=None, fault_type="Mechanical Breakdown", priority="HIGH", estimated_hours=4.0):
-        # Generate WO Number
-        count = MaintenanceWorkOrder.query.count() + 1
-        wo_number = f"WO-{count:05d}"
-
-        work_order = MaintenanceWorkOrder(
-            work_order_number=wo_number,
+    def create_work_order(
+        machine_id: str,
+        disruption_id: Optional[str] = None,
+        fault_type: str = "Mechanical Breakdown",
+        priority: str = "HIGH",
+        estimated_hours: float = 4.0,
+        assigned_to: Optional[str] = None
+    ) -> Dict[str, Any]:
+        wo = maintenance_repo.create_work_order(
             machine_id=machine_id,
-            disruption_id=disruption_id,
             fault_type=fault_type,
             priority=priority,
-            status=MaintenanceStatus.OPEN.value,
-            estimated_repair_hours=estimated_hours,
-            created_at=datetime.utcnow()
+            estimated_hours=estimated_hours,
+            disruption_id=disruption_id,
+            assigned_to=assigned_to
         )
-        db.session.add(work_order)
-        db.session.commit()
-
-        websocket_service.notify_maintenance_created(work_order.to_dict())
-        return work_order
+        websocket_service.notify_maintenance_created(wo)
+        return wo
 
     @staticmethod
-    def update_work_order_status(work_order_id, new_status, notes=None, assigned_to_id=None, user=None):
-        wo = MaintenanceWorkOrder.query.get(work_order_id)
+    def update_work_order_status(
+        work_order_id: str,
+        new_status: str,
+        notes: Optional[str] = None,
+        assigned_to: Optional[str] = None,
+        actual_hours: Optional[float] = None,
+        user: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        wo = maintenance_repo.get_by_id(work_order_id)
         if not wo:
-            raise ValueError(f"Work order {work_order_id} not found")
+            raise ResourceNotFoundError("Maintenance Work Order", work_order_id)
 
-        old_status = wo.status
-        wo.status = new_status
-        if notes:
-            wo.notes = f"{wo.notes}\n[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')}] {notes}" if wo.notes else notes
-        if assigned_to_id:
-            wo.assigned_to_id = assigned_to_id
+        user_role = (user.get("role") if user else "SERVICE PERSON") or "SERVICE PERSON"
+        current_status = wo.get("status", "OPEN")
+        validated_status = MaintenanceWorkflow.validate_transition(current_status, new_status, role=user_role)
 
-        if new_status == MaintenanceStatus.IN_PROGRESS.value and not wo.started_at:
-            wo.started_at = datetime.utcnow()
-            # Transition machine to MAINTENANCE
-            machine_service.update_machine_status(wo.machine_id, MachineState.MAINTENANCE.value, reason=f"Repair started on {wo.work_order_number}")
+        existing_notes = wo.get("notes", "")
+        updated_notes = f"{existing_notes}\n{notes}".strip() if notes else existing_notes
 
-        elif new_status == MaintenanceStatus.REPAIRED.value:
-            wo.repaired_at = datetime.utcnow()
-            machine_service.update_machine_status(wo.machine_id, MachineState.REPAIRED.value, reason=f"Repair completed on {wo.work_order_number}")
-
-        elif new_status == MaintenanceStatus.VERIFIED.value:
-            wo.verified_at = datetime.utcnow()
-            machine_service.update_machine_status(wo.machine_id, MachineState.VERIFIED.value, reason="Maintenance verified by Service Person")
-            # Return to AVAILABLE
-            machine_service.update_machine_status(wo.machine_id, MachineState.AVAILABLE.value, reason="Machine returned to production service")
-
-        elif new_status == MaintenanceStatus.CLOSED.value:
-            if not wo.verified_at:
-                wo.verified_at = datetime.utcnow()
-            machine_service.update_machine_status(wo.machine_id, MachineState.AVAILABLE.value, reason="Work order closed")
-
-        db.session.commit()
-        websocket_service.notify_maintenance_updated(wo.to_dict())
-
-        # Audit log
-        username = user.username if user else "SERVICE_PERSON"
-        audit = AuditLog(
-            user_id=user.id if user else None,
-            username=username,
-            action="MAINTENANCE_STATUS_UPDATED",
-            entity_type="MAINTENANCE",
-            entity_id=str(wo.id),
-            details_json=f'{{"wo_number": "{wo.work_order_number}", "old_status": "{old_status}", "new_status": "{new_status}"}}'
+        maintenance_repo.update_workflow(
+            wo_id=work_order_id,
+            new_status=validated_status,
+            notes=updated_notes,
+            assigned_to=assigned_to,
+            actual_hours=actual_hours
         )
-        db.session.add(audit)
-        db.session.commit()
 
-        return wo
+        machine_id = wo.get("machine_id")
+
+        # Synchronize Machine state transitions based on maintenance steps
+        if validated_status == "IN_PROGRESS":
+            try:
+                machine_service.update_machine_status(
+                    machine_id=machine_id,
+                    new_status="MAINTENANCE",
+                    user_role=user_role,
+                    reason=f"Repair started on {work_order_id}"
+                )
+            except Exception:
+                pass
+        elif validated_status == "REPAIRED":
+            try:
+                machine_service.update_machine_status(
+                    machine_id=machine_id,
+                    new_status="REPAIRED",
+                    user_role=user_role,
+                    reason=f"Repair completed on {work_order_id}"
+                )
+            except Exception:
+                pass
+        elif validated_status == "VERIFIED":
+            try:
+                # First transition to VERIFIED, then back to AVAILABLE
+                machine_service.update_machine_status(
+                    machine_id=machine_id,
+                    new_status="VERIFIED",
+                    user_role=user_role,
+                    reason=f"Maintenance verified on {work_order_id}"
+                )
+                machine_service.update_machine_status(
+                    machine_id=machine_id,
+                    new_status="AVAILABLE",
+                    user_role="MANAGER",
+                    reason="Machine returned to operational pool after maintenance signoff"
+                )
+            except Exception:
+                pass
+
+        updated_wo = maintenance_repo.get_by_id(work_order_id)
+        websocket_service.notify_maintenance_updated(updated_wo)
+        return updated_wo
 
 maintenance_service = MaintenanceService()

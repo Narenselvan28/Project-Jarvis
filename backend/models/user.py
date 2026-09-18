@@ -1,28 +1,24 @@
 from datetime import datetime
 from enum import Enum
 from werkzeug.security import generate_password_hash, check_password_hash
-from backend.extensions import db
 
 class Role(str, Enum):
     MANAGER = "MANAGER"
     SUPERVISOR = "SUPERVISOR"
     SERVICE_PERSON = "SERVICE_PERSON"
 
-class User(db.Model):
-    __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    full_name = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default=Role.SUPERVISOR.value, index=True)
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+class User:
+    def __init__(self, username, email, full_name, role=Role.SUPERVISOR.value, id=None, password_hash=None, is_active=True):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.full_name = full_name
+        self.role = role.value if hasattr(role, 'value') else role
+        self.password_hash = password_hash or ""
+        self.is_active = is_active
+        self.created_at = datetime.utcnow()
 
     def set_password(self, password: str):
-        # Generates secure hash using scrypt/pbkdf2 via werkzeug
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:

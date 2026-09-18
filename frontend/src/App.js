@@ -9,6 +9,7 @@ import SupervisorPlansPage from "./pages/SupervisorPlansPage";
 import MaintenancePage from "./pages/MaintenancePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import AuditLogPage from "./pages/AuditLogPage";
+import BookingReportPage from "./pages/BookingReportPage";
 import api from "./services/api";
 
 export default function App() {
@@ -105,6 +106,16 @@ export default function App() {
         <Route
           path="/audit-logs"
           element={user ? <AuditLogPage user={user} /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/booking-report"
+          element={<BookingReportPage />}
+        />
+
+        <Route
+          path="/report"
+          element={<BookingReportPage />}
         />
 
         <Route path="*" element={<Navigate to={user ? "/factory" : "/login"} replace />} />
