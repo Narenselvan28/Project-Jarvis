@@ -1,0 +1,337 @@
+/* Factory Flow 2D Interactive Visualization */
+
+.factory-layout-container {
+  display: flex;
+  height: calc(100vh - var(--topbar-height) - var(--demobar-height));
+  width: 100vw;
+  background-color: #080c16;
+  position: relative;
+  overflow: hidden;
+}
+
+.factory-canvas-area {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-image: 
+    radial-gradient(circle, #1a263d 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.factory-canvas-controls {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.65rem;
+  border-radius: 4px;
+}
+
+.canvas-ctrl-btn {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.canvas-ctrl-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-accent);
+}
+
+.factory-svg-viewport {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.factory-svg-viewport:active {
+  cursor: grabbing;
+}
+
+/* SVG Flow Paths */
+.flow-path-base {
+  fill: none;
+  stroke: #1e2e4a;
+  stroke-width: 3;
+}
+
+.flow-path-active {
+  fill: none;
+  stroke: #0284c7;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 6;
+  animation: flowAnimation 2s linear infinite;
+}
+
+.flow-path-reassigned {
+  fill: none;
+  stroke: #14b8a6;
+  stroke-width: 3;
+  stroke-dasharray: 8 4;
+  animation: flowAnimation 1.5s linear infinite;
+}
+
+.flow-path-blocked {
+  fill: none;
+  stroke: #ef4444;
+  stroke-width: 3;
+  stroke-dasharray: 4 4;
+}
+
+@keyframes flowAnimation {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Machine SVG Node Styles */
+.svg-machine-node {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.svg-machine-node:hover {
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+}
+
+.node-outer-ring {
+  fill: #0d1527;
+  stroke: var(--border-color);
+  stroke-width: 2;
+  transition: stroke 0.3s ease;
+}
+
+.node-inner-core {
+  fill: #131d33;
+}
+
+.node-indicator-running {
+  animation: spinActivity 8s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes spinActivity {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.node-pulse-failed {
+  animation: failPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes failPulse {
+  0% { r: 36px; opacity: 0.8; stroke-width: 2px; }
+  50% { r: 44px; opacity: 0.15; stroke-width: 4px; }
+  100% { r: 36px; opacity: 0.8; stroke-width: 2px; }
+}
+
+.node-pulse-reassigned {
+  animation: reassignedGlow 2s ease-in-out infinite;
+}
+
+@keyframes reassignedGlow {
+  0% { stroke: #14b8a6; stroke-width: 2; }
+  50% { stroke: #2dd4bf; stroke-width: 4; }
+  100% { stroke: #14b8a6; stroke-width: 2; }
+}
+
+.machine-id-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  fill: #f8fafc;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.machine-sub-text {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  fill: #94a3b8;
+  text-anchor: middle;
+}
+
+.lane-label-box {
+  fill: #0c1424;
+  stroke: #1e293b;
+  stroke-width: 1;
+}
+
+.lane-title-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  fill: #60a5fa;
+  letter-spacing: 0.08em;
+}
+
+/* Slide-out Inspector Drawer */
+.factory-inspector-drawer {
+  width: 400px;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  overflow-y: auto;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0d1527;
+}
+
+.drawer-content {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.stat-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+}
+
+.stat-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin-top: 0.2rem;
+}
+
+/* Bottom Event & Changes Feed */
+.factory-bottom-tray {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 400px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--border-color);
+  height: 110px;
+  display: flex;
+  flex-direction: column;
+  z-index: 15;
+}
+
+.bottom-tray-header {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  background: #0a0f1d;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.bottom-tray-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  overflow-x: auto;
+}
+
+.event-ticker-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* Pipeline Step Indicator (8 steps) */
+.pipeline-steps-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.pipeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  z-index: 2;
+}
+
+.step-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.step-circle.active {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  color: #60a5fa;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.step-circle.done {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+.step-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-align: center;
+}

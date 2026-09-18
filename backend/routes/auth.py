@@ -1,0 +1,59 @@
+from functools import wraps
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from backend.models.user import User, Role
+
+auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+def role_required(*allowed_roles):
+    def decorator(fn):
+        @wraps(fn)
+        @jwt_required()
+        def wrapper(*args, **kwargs):
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user or user.role not in allowed_roles:
+                return jsonify({"error": "Forbidden: Insufficient permissions", "required_roles": allowed_roles}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def manager_required(fn):
+    return role_required(Role.MANAGER.value)(fn)
+
+def supervisor_or_manager_required(fn):
+    return role_required(Role.MANAGER.value, Role.SUPERVISOR.value)(fn)
+
+def service_person_required(fn):
+    return role_required(Role.SERVICE_PERSON.value, Role.MANAGER.value)(fn)
+
+@auth_bp.route("/login", methods=["POST"])
+def login():
+    data = request.get_json() or {}
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if not user or not user.check_password(password):
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    if not user.is_active:
+        return jsonify({"error": "Account is inactive"}), 403
+
+    access_token = create_access_token(identity=str(user.id))
+    return jsonify({
+        "access_token": access_token,
+        "user": user.to_dict()
+    }), 200
+
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required()
+def get_current_user():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"user": user.to_dict()}), 200

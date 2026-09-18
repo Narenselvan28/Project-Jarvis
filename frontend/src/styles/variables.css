@@ -1,0 +1,46 @@
+:root {
+  /* Industrial Palette */
+  --bg-primary: #0a0f1d;
+  --bg-secondary: #0f172a;
+  --bg-card: #131d33;
+  --bg-card-hover: #182440;
+  --bg-subtle: #1e293b;
+  --bg-input: #0b1325;
+
+  /* Engineering Grid & Borders */
+  --border-color: #243452;
+  --border-subtle: #1a273e;
+  --border-accent: #3b82f6;
+
+  /* Typography */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Machine & Operational State Colors */
+  --status-available: #10b981;  /* Emerald */
+  --status-running: #06b6d4;    /* Cyan */
+  --status-idle: #64748b;       /* Slate */
+  --status-setup: #f59e0b;      /* Amber */
+  --status-blocked: #f97316;    /* Orange */
+  --status-failed: #ef4444;     /* Crimson */
+  --status-maintenance: #ec4899;/* Rose */
+  --status-repaired: #8b5cf6;   /* Purple */
+  --status-verified: #3b82f6;   /* Blue */
+  --status-reassigned: #14b8a6; /* Teal */
+
+  /* Priority Accents */
+  --priority-urgent: #ef4444;
+  --priority-high: #f97316;
+  --priority-medium: #f59e0b;
+  --priority-low: #10b981;
+
+  /* Typography Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
+
+  /* Layout */
+  --topbar-height: 56px;
+  --demobar-height: 44px;
+}
