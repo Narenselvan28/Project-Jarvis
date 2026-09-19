@@ -4,6 +4,17 @@
 
 ReFlow is a single unified enterprise manufacturing ERP and production scheduling platform. It integrates commercial contracts, SLA penalty tracking, raw material inventory (BOM), departmental workforce capacity, and fleet maintenance billing around a locked production intelligence core: XGBoost processing-time regressors, machine failure-risk classifiers, multi-factor suitability scoring, SHAP explainability, and Google OR-Tools CP-SAT constraint programming.
 
+## Team Members
+
+| # | Name | Role |
+|---|---|---|
+| 1 | **Indiresh Kumar R** | Team Lead & Frontend Designer |
+| 2 | **Naren Selvan T** | ML Developer |
+| 3 | **Shanmuga Priya K P** | UI Designer & Researcher |
+| 4 | **Gowshic S S** | Backend Developer |
+
+---
+
 ```mermaid
 graph TD
     ERP[Enterprise ERP & Business Context] --> |Contracts, Materials BOM, Workforce| REF[Production Intelligence Core]
