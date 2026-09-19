@@ -7,6 +7,9 @@ const getSocketURL = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL.replace(/\/+$/, "").replace(/\/api\/v1$/, "");
   }
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://jarvis-bknd.onrender.com";
+  }
   return undefined;
 };
 

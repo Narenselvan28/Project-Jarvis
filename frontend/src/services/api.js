@@ -2,11 +2,14 @@ import axios from "axios";
 
 const getBaseURL = () => {
   const envUrl = process.env.REACT_APP_API_URL;
-  if (!envUrl) {
-    return "/api/v1";
+  if (envUrl) {
+    const cleanUrl = envUrl.replace(/\/+$/, "");
+    return cleanUrl.endsWith("/api/v1") ? cleanUrl : `${cleanUrl}/api/v1`;
   }
-  const cleanUrl = envUrl.replace(/\/+$/, "");
-  return cleanUrl.endsWith("/api/v1") ? cleanUrl : `${cleanUrl}/api/v1`;
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://jarvis-bknd.onrender.com/api/v1";
+  }
+  return "/api/v1";
 };
 
 const api = axios.create({

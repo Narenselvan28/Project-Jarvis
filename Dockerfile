@@ -2,6 +2,10 @@
 
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
+ARG REACT_APP_API_URL=https://jarvis-bknd.onrender.com
+ARG REACT_APP_SOCKET_URL=https://jarvis-bknd.onrender.com
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_SOCKET_URL=$REACT_APP_SOCKET_URL
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
@@ -12,6 +16,9 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV DATABASE_MODE=atlas
+ENV MONGODB_ATLAS_URI=mongodb+srv://narenselvan77_db_user:KaSVVs32FLiaLKqQ@cluster0.hpfub4u.mongodb.net/reflow?retryWrites=true&w=majority&appName=Cluster0
+ENV MONGODB_DB_NAME=reflow
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \

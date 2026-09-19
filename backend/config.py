@@ -19,8 +19,9 @@ class Config:
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
 
     # MongoDB Architecture Configuration (Atlas Primary + Local Fallback)
+    DEFAULT_ATLAS_URI = "mongodb+srv://narenselvan77_db_user:KaSVVs32FLiaLKqQ@cluster0.hpfub4u.mongodb.net/reflow?retryWrites=true&w=majority&appName=Cluster0"
     DATABASE_MODE = os.getenv("DATABASE_MODE", "auto").lower().strip() # 'auto', 'atlas', 'local'
-    MONGODB_ATLAS_URI = os.getenv("MONGODB_ATLAS_URI", "")
+    MONGODB_ATLAS_URI = os.getenv("MONGODB_ATLAS_URI") or DEFAULT_ATLAS_URI
     MONGODB_LOCAL_URI = os.getenv("MONGODB_LOCAL_URI", "mongodb://127.0.0.1:27017")
     MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "reflow")
     MONGODB_CONNECTION_TIMEOUT_MS = int(os.getenv("MONGODB_CONNECTION_TIMEOUT_MS", "5000"))

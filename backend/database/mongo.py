@@ -51,6 +51,10 @@ class MongoDBManager:
             logger.info("Database: explicit local mode active (DATABASE_MODE=local)")
             if self._try_connect_local():
                 return
+            if os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID"):
+                logger.warning("Database: Local MongoDB is unavailable on Render. Attempting Atlas fallback...")
+                if self._try_connect_atlas():
+                    return
             self.database_provider = "UNAVAILABLE"
             self.connection_error = "Local MongoDB is unavailable and DATABASE_MODE is set to 'local'."
             logger.error(f"Database: {self.connection_error}")
@@ -88,6 +92,22 @@ class MongoDBManager:
         self.database_provider = "UNAVAILABLE"
         self.connection_error = "Both MongoDB Atlas and Local MongoDB are unreachable."
         logger.error(f"Database: {self.connection_error}")
+
+    def _try_connect_mock(self) -> bool:
+        """Attempts in-memory mongomock fallback so container never crashes"""
+        try:
+            import mongomock
+            logger.warning("Database: Initializing in-memory MongoMock fallback...")
+            mock_client = mongomock.MongoClient()
+            self.client = mock_client
+            self.db = mock_client[self.db_name]
+            self.database_provider = "MOCK"
+            logger.info("Database: MongoMock connection successful")
+            print(f"[MongoDB] Connected: MONGOMOCK (In-memory fallback for {self.db_name})")
+            return True
+        except Exception as me:
+            logger.error(f"Database: MongoMock initialization failed: {me}")
+            return False
 
     def _try_connect_atlas(self) -> bool:
         """Attempts connection to MongoDB Atlas with configured timeout"""
@@ -162,7 +182,7 @@ class MongoDBManager:
 
     def get_status(self) -> dict:
         """Safe status descriptor without exposing credentials or internal topology"""
-        is_connected = (self.database_provider in ["ATLAS", "LOCAL"] and self.db is not None)
+        is_connected = (self.database_provider in ["ATLAS", "LOCAL", "MOCK"] and self.db is not None)
         return {
             "provider": self.database_provider,
             "status": "connected" if is_connected else "disconnected",
