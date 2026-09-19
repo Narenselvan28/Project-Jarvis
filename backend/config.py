@@ -15,6 +15,9 @@ class Config:
     # Application-Level AES-256-GCM Encryption Key
     AES_ENCRYPTION_KEY = os.getenv("AES_ENCRYPTION_KEY", "reflow-super-secret-aes-key-32b!")
 
+    # CORS Configuration
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
+
     # MongoDB Architecture Configuration (Atlas Primary + Local Fallback)
     DATABASE_MODE = os.getenv("DATABASE_MODE", "auto").lower().strip() # 'auto', 'atlas', 'local'
     MONGODB_ATLAS_URI = os.getenv("MONGODB_ATLAS_URI", "")

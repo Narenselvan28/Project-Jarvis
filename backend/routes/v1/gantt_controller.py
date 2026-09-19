@@ -12,6 +12,7 @@ from backend.schemas.common import make_success, make_error
 gantt_v1_bp = Blueprint("gantt_v1", __name__, url_prefix="/api/v1")
 
 @gantt_v1_bp.route("/gantt/global", methods=["GET"])
+@gantt_v1_bp.route("/gantt/orders", methods=["GET"])
 def get_global_gantt():
     operations = schedule_repo.get_operations()
     if not operations:
@@ -42,6 +43,7 @@ def get_global_gantt():
     })
 
 @gantt_v1_bp.route("/gantt/orders/<string:order_id>", methods=["GET"])
+@gantt_v1_bp.route("/gantt/order/<string:order_id>", methods=["GET"])
 def get_order_gantt(order_id):
     order = order_repo.get_by_id(order_id)
     if not order:

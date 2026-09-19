@@ -130,9 +130,10 @@ class DisruptionService:
                     candidates = find_candidate_machines(machine_id, op["process_id"], order, op)
                     compatible_map[op["process_id"]] = candidates
                     for c in candidates:
+                        op_ident = op.get("id") or op.get("operation_id") or f"{order.get('id', 'ORD')}-OP-{op.get('sequence', 1):02d}"
                         all_candidates_summary.append({
                             "order_id": order["id"],
-                            "operation_id": op["id"],
+                            "operation_id": op_ident,
                             "candidate_machine_id": c["machine_id"],
                             "candidate_machine_name": c["machine_name"],
                             "lane_id": c["lane_id"],

@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for Adaptive Production Scheduling Platform
+# Multi-stage Dockerfile for ReFlow Adaptive Production Scheduling Platform
 
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
@@ -22,10 +22,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ backend/
+COPY ml/ ml/
 COPY scripts/ scripts/
+COPY wsgi.py .
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 EXPOSE 5000
 
-# Train models and start backend
-CMD python scripts/train_models.py && python scripts/demo_reset.py && python backend/app.py
+# Train ML models and launch production WSGI server
+CMD python scripts/train_models.py && gunicorn --worker-class gthread -w 1 --threads 8 -b 0.0.0.0:${PORT:-5000} wsgi:app

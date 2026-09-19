@@ -1,5 +1,15 @@
 import { io } from "socket.io-client";
 
+const getSocketURL = () => {
+  if (process.env.REACT_APP_SOCKET_URL) {
+    return process.env.REACT_APP_SOCKET_URL.replace(/\/+$/, "");
+  }
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL.replace(/\/+$/, "").replace(/\/api\/v1$/, "");
+  }
+  return undefined;
+};
+
 class SocketService {
   constructor() {
     this.socket = null;
@@ -9,12 +19,15 @@ class SocketService {
   connect() {
     if (this.socket) return;
 
-    this.socket = io({
+    const targetUrl = getSocketURL();
+    const options = {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000
-    });
+    };
+
+    this.socket = targetUrl ? io(targetUrl, options) : io(options);
 
     this.socket.on("connect", () => {
       console.log("[Socket.IO] Connected to backend live server, id:", this.socket.id);

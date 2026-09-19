@@ -39,3 +39,14 @@ def reoptimize_schedule():
         "message": "Optimization re-run successfully across all active machines",
         "comparisons": baselines
     }), 200
+
+@schedules_bp.route("/<string:schedule_id>/approve", methods=["POST"])
+def approve_schedule_legacy(schedule_id):
+    from backend.routes.v1.schedules_controller import approve_schedule
+    return approve_schedule(schedule_id)
+
+@schedules_bp.route("/<string:schedule_id>/reject", methods=["POST"])
+def reject_schedule_legacy(schedule_id):
+    from backend.routes.v1.schedules_controller import reject_schedule
+    return reject_schedule(schedule_id)
+

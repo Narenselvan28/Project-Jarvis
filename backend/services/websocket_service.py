@@ -29,8 +29,8 @@ class WebSocketService:
         WebSocketService.emit_event("machine_repaired", machine_dict)
 
     @staticmethod
-    def notify_schedule_updated(schedule_data):
-        WebSocketService.emit_event("schedule_updated", schedule_data)
+    def notify_schedule_updated(schedule_data=None):
+        WebSocketService.emit_event("schedule_updated", schedule_data or {})
 
     @staticmethod
     def notify_order_status_changed(order_dict):

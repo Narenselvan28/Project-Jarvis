@@ -10,6 +10,7 @@ import MaintenancePage from "./pages/MaintenancePage";
 import ErpPage from "./pages/ErpPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import AuditLogPage from "./pages/AuditLogPage";
+import AdminPage from "./pages/AdminPage";
 import api from "./services/api";
 
 export default function App() {
@@ -137,6 +138,9 @@ export default function App() {
           {/* IMMUTABLE AUDIT TRAIL */}
           <Route path="/audit" element={<AuditLogPage user={user} />} />
           <Route path="/audit-logs" element={<AuditLogPage user={user} />} />
+
+          {/* ADMIN CONSOLE & GOVERNANCE */}
+          <Route path="/admin" element={<AdminPage user={user} />} />
 
           {/* DISRUPTION SIMULATION REDIRECTS TO REAL API WORKFLOW (Prompt Section 23) */}
           <Route path="/simulation" element={<Navigate to="/factory" replace />} />

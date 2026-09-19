@@ -86,22 +86,40 @@ def get_recommendations(disruption_id):
         "approved_option": disruption.get("approved_option")
     }), 200
 
+@disruptions_bp.route("/manager/simulate-disruption", methods=["POST"])
+def simulate_disruption_manager():
+    data = request.get_json() or {}
+    machine_id = data.get("machine_id", "CUT-02")
+    failure_type = data.get("failure_type", "MECHANICAL_FAILURE")
+    duration = float(data.get("duration_hours", 6.0))
+    try:
+        res = disruption_service.simulate_disruption(
+            machine_id=machine_id,
+            failure_type=failure_type,
+            duration_hours=duration
+        )
+        return jsonify(res), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @disruptions_bp.route("/recommendations/<string:disruption_id>/approve", methods=["POST"])
+@disruptions_bp.route("/recovery/<string:disruption_id>/approve", methods=["POST"])
 def approve_recovery_option(disruption_id):
     """
     Manager approves Option A or Option B.
     Body: {"option": "OPTION_A"} or {"option": "OPTION_B"}
     """
     data = request.get_json() or {}
-    chosen = data.get("option", "OPTION_A").upper()
+    chosen = data.get("option") or data.get("option_id") or data.get("chosen_option") or "OPTION_A"
 
     try:
-        res = disruption_service.approve_recommendation(disruption_id, chosen_option=chosen)
+        res = disruption_service.approve_recommendation(disruption_id, chosen_option=str(chosen).upper())
         return jsonify(res), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
 @disruptions_bp.route("/recommendations/<string:disruption_id>/reject", methods=["POST"])
+@disruptions_bp.route("/recovery/<string:disruption_id>/reject", methods=["POST"])
 def reject_recovery_options(disruption_id):
     """
     Manager rejects both recovery options.
@@ -115,3 +133,22 @@ def reject_recovery_options(disruption_id):
         return jsonify(res), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+@disruptions_bp.route("/recovery/<string:disruption_id>/regenerate", methods=["POST"])
+def regenerate_recovery_options(disruption_id):
+    disruption = DisruptionDB.get(disruption_id)
+    if not disruption:
+        return jsonify({"error": f"Disruption {disruption_id} not found"}), 404
+    machine_id = disruption.get("machine_id")
+    failure_type = disruption.get("failure_type", "MECHANICAL_FAILURE")
+    duration = float(disruption.get("estimated_downtime_hours", 6.0))
+    try:
+        res = disruption_service.simulate_disruption(
+            machine_id=machine_id,
+            failure_type=failure_type,
+            duration_hours=duration
+        )
+        return jsonify(res), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+

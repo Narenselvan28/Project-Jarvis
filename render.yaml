@@ -1,0 +1,32 @@
+# Render Blueprint for ReFlow Adaptive Production Intelligence Platform
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API & WebSocket Service
+  - type: web
+    name: reflow-backend
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "pip install -r requirements.txt && python scripts/train_models.py"
+    startCommand: "gunicorn --worker-class gthread -w 1 --threads 8 -b 0.0.0.0:$PORT wsgi:app"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_MODE
+        value: atlas
+      - key: MONGODB_ATLAS_URI
+        sync: false  # Provide your MongoDB Atlas connection string in Render Dashboard
+      - key: MONGODB_DB_NAME
+        value: reflow
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: AES_ENCRYPTION_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"

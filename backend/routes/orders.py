@@ -34,18 +34,44 @@ def get_order(order_id):
 def create_order():
     data = request.get_json() or {}
     order_id = data.get("id") or f"ORD-{get_collection('orders').count_documents({}) + 1041}"
+    product_name = data.get("product_name") or data.get("product", "Classic Crew Neck T-Shirt")
+    product_code = data.get("product_code", "PRD-TSHIRT-01")
+    quantity = int(data.get("quantity", 5000))
+    priority = data.get("priority", "MEDIUM")
+    deadline = data.get("due_date") or data.get("deadline")
+    customer = data.get("customer", "Retail Customer")
+
+    from backend.services.order_planning_service import order_planning_service
+    from backend.repositories.order_repository import order_repo
+
+    plan = order_planning_service.generate_plan_for_order(
+        product_name=product_name,
+        product_code=product_code,
+        quantity=quantity,
+        priority=priority,
+        deadline_str=deadline,
+        customer=customer,
+        order_id=order_id
+    )
     
     doc = {
         "id": order_id,
-        "product_name": data.get("product_name", "Classic Crew Neck T-Shirt"),
-        "product_code": data.get("product_code", "PRD-TSHIRT-01"),
-        "quantity": int(data.get("quantity", 5000)),
-        "priority": data.get("priority", "MEDIUM"),
-        "status": data.get("status", "PLANNED"),
+        "order_id": order_id,
+        "plan_id": plan["id"],
+        "product_name": product_name,
+        "product": product_name,
+        "product_code": product_code,
+        "quantity": quantity,
+        "priority": priority,
+        "status": "PENDING_SUPERVISOR_REVIEW",
+        "production_status": "PENDING_SUPERVISOR_REVIEW",
         "deadline_hours": float(data.get("deadline_hours", 24.0)),
-        "due_date": data.get("due_date"),
+        "due_date": deadline,
+        "deadline": deadline,
+        "customer": customer,
         "assigned_lane_id": data.get("assigned_lane_id", "L01"),
-        "created_at": data.get("created_at")
+        "created_at": data.get("created_at"),
+        "operations": plan.get("operations", [])
     }
-    get_collection("orders").insert_one(doc)
-    return jsonify({"order": doc}), 201
+    order_repo.create_order(doc, operations=plan.get("operations", []))
+    return jsonify({"order": doc, "plan": plan, "status": "PENDING_SUPERVISOR_REVIEW"}), 201

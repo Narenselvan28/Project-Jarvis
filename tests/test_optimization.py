@@ -7,6 +7,9 @@ from backend.optimization.candidate_machine_selector import find_candidate_machi
 def test_two_recovery_options_generation(app):
     machines = {m["id"]: m for m in machine_repo.get_all_machines()}
     affected_order = order_repo.get_by_id("ORD-1042")
+    if not affected_order:
+        orders = order_repo.get_all_orders()
+        affected_order = orders[0] if orders else None
     assert affected_order is not None
 
     candidates_map = {

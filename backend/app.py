@@ -27,11 +27,33 @@ def create_app(config_class=Config):
 
     # Initialize extensions
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
-    socketio.init_app(app)
+    cors_origins = app.config.get("CORS_ORIGINS", "*")
+    if isinstance(cors_origins, str) and "," in cors_origins:
+        cors_origins = [o.strip() for o in cors_origins.split(",") if o.strip()]
+    cors.init_app(app, resources={r"/*": {"origins": cors_origins}}, supports_credentials=True)
+    socketio.init_app(app, cors_allowed_origins=cors_origins)
 
     # Register blueprints (both /api/v1/ and legacy /api/)
     register_blueprints(app)
+
+    @app.route("/", methods=["GET"])
+    def root_ping():
+        return jsonify({
+            "service": "ReFlow Adaptive Production Intelligence API",
+            "status": "online",
+            "health": "/health",
+            "api_version": "v1",
+            "api_prefix": "/api/v1"
+        }), 200
+
+    @app.route("/health", methods=["GET"])
+    def health_check():
+        from backend.database.mongo import get_db_status
+        db_status = get_db_status()
+        return jsonify({
+            "status": "healthy",
+            "database": db_status
+        }), 200
 
     # Domain & global error handlers
     @app.errorhandler(DomainError)

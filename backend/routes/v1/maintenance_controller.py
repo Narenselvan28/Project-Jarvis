@@ -71,6 +71,93 @@ def update_work_order_status(wo_id):
     except Exception as e:
         return make_error("INTERNAL_ERROR", str(e), status_code=500)
 
+@maintenance_v1_bp.route("/maintenance/<string:wo_id>/verify-and-restore", methods=["POST"])
+@role_required("SERVICE_PERSON", "MANAGER", "ADMIN")
+def verify_and_restore(wo_id):
+    user_id = get_jwt_identity()
+    user = user_repo.get_by_id(user_id) or {"username": "service", "role": "SERVICE_PERSON"}
+    data = request.get_json() or {}
+    notes = data.get("notes", "Verified and restored to service")
+    try:
+        updated = maintenance_service.update_work_order_status(
+            work_order_id=wo_id,
+            new_status="VERIFIED",
+            notes=notes,
+            user=user
+        )
+        wo = maintenance_repo.get_by_id(wo_id)
+        if wo and wo.get("machine_id"):
+            machine_service.update_machine_status(
+                machine_id=wo["machine_id"],
+                new_status="AVAILABLE",
+                user_role="MANAGER",
+                reason="Restored to operational pool post-maintenance verification"
+            )
+        return make_success(updated)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
+    except Exception as e:
+        return make_error("INTERNAL_ERROR", str(e), status_code=500)
+
+@maintenance_v1_bp.route("/maintenance/<string:wo_id>/accept", methods=["POST"])
+@role_required("SERVICE_PERSON", "MANAGER", "ADMIN")
+def accept_maintenance(wo_id):
+    user_id = get_jwt_identity()
+    user = user_repo.get_by_id(user_id) or {"username": "service", "role": "SERVICE_PERSON"}
+    data = request.get_json() or {}
+    try:
+        updated = maintenance_service.update_work_order_status(
+            work_order_id=wo_id,
+            new_status="ASSIGNED",
+            notes=data.get("notes", "Service request accepted by technician"),
+            assigned_to=user.get("username", "service"),
+            user=user
+        )
+        return make_success(updated)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
+    except Exception as e:
+        return make_error("INTERNAL_ERROR", str(e), status_code=500)
+
+@maintenance_v1_bp.route("/maintenance/<string:wo_id>/start", methods=["POST"])
+@role_required("SERVICE_PERSON", "MANAGER", "ADMIN")
+def start_maintenance(wo_id):
+    user_id = get_jwt_identity()
+    user = user_repo.get_by_id(user_id) or {"username": "service", "role": "SERVICE_PERSON"}
+    data = request.get_json() or {}
+    try:
+        updated = maintenance_service.update_work_order_status(
+            work_order_id=wo_id,
+            new_status="IN_PROGRESS",
+            notes=data.get("notes", "Repair in progress"),
+            user=user
+        )
+        return make_success(updated)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
+    except Exception as e:
+        return make_error("INTERNAL_ERROR", str(e), status_code=500)
+
+@maintenance_v1_bp.route("/maintenance/<string:wo_id>/complete", methods=["POST"])
+@role_required("SERVICE_PERSON", "MANAGER", "ADMIN")
+def complete_maintenance(wo_id):
+    user_id = get_jwt_identity()
+    user = user_repo.get_by_id(user_id) or {"username": "service", "role": "SERVICE_PERSON"}
+    data = request.get_json() or {}
+    try:
+        updated = maintenance_service.update_work_order_status(
+            work_order_id=wo_id,
+            new_status="REPAIRED",
+            notes=data.get("notes", "Repair completed"),
+            actual_hours=data.get("actual_hours"),
+            user=user
+        )
+        return make_success(updated)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
+    except Exception as e:
+        return make_error("INTERNAL_ERROR", str(e), status_code=500)
+
 # ============================================================
 # SERVICE PERSONS & FIELD TECHNICIANS
 # ============================================================

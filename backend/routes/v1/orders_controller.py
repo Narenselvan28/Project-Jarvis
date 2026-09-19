@@ -69,10 +69,24 @@ def create_order():
 
     est_cost = float(raw_data.get("estimated_production_cost", 85000.0))
 
-    # 2. Build canonical Order Document
+    # 2. Execute Intelligence Loop 1: ML Processing-Time & Failure-Risk Predictions -> Suitability Evaluation -> OR-Tools CP-SAT
+    plan = order_planning_service.generate_plan_for_order(
+        product_name=product_name,
+        product_code=product_code,
+        quantity=quantity,
+        priority=priority,
+        deadline_str=deadline,
+        customer=customer_name,
+        user_id=user["id"] if isinstance(user, dict) and "id" in user else "USR-MGR-01",
+        username=user.get("username", "manager") if isinstance(user, dict) else "manager",
+        order_id=order_id
+    )
+
+    # 3. Build canonical Order Document in PENDING_SUPERVISOR_APPROVAL status
     order_data = {
         "id": order_id,
         "order_id": order_id,
+        "plan_id": plan["id"],
         "customer": customer_name,
         "customer_name": customer_name,
         "product": product_name,
@@ -81,9 +95,9 @@ def create_order():
         "quantity": quantity,
         "unit": unit,
         "priority": priority,
-        "status": "Scheduled",
-        "production_status": "SCHEDULED",
-        "erp_status": "IN_PRODUCTION",
+        "status": "PENDING_SUPERVISOR_REVIEW",
+        "production_status": "PENDING_SUPERVISOR_REVIEW",
+        "erp_status": "PLANNING_REVIEW",
         "deadline": deadline,
         "delivery_deadline": deadline,
         "contract_id": contract_id,
@@ -97,15 +111,15 @@ def create_order():
         "printing_required": bool(raw_data.get("printing_required", False)),
         "embroidery_required": bool(raw_data.get("embroidery_required", True)),
         "workforce_required": int(raw_data.get("workforce_required", 12)),
-        "estimated_production_cost": est_cost,
-        "actual_production_cost": est_cost,
-        "deadline_status": "Safe",
+        "estimated_production_cost": plan.get("estimated_cost", est_cost),
+        "actual_production_cost": plan.get("estimated_cost", est_cost),
+        "deadline_status": "Safe" if plan.get("deadline_risk") == "LOW" else plan.get("deadline_risk", "Safe"),
         "progress_pct": 0,
-        "current_stage": "Cutting",
+        "current_stage": plan["operations"][0]["process_name"] if plan.get("operations") else "Spinning",
         "created_at": raw_data.get("created_at") or raw_data.get("order_date")
     }
 
-    # 3. Create Contract Document
+    # 4. Create Contract Document
     contract_repo.upsert({
         "id": contract_id,
         "order_id": order_id,
@@ -119,13 +133,24 @@ def create_order():
         "status": "Safe"
     })
 
-    # 4. Generate operations and save order
-    created = order_repo.create_order(order_data)
+    # 5. Save order with AI-generated operations
+    created = order_repo.create_order(order_data, operations=plan.get("operations", []))
 
-    # 5. Broadcast real-time update
-    websocket_service.broadcast("order.updated", {"order_id": order_id, "status": "Scheduled"})
+    # 6. Broadcast real-time update to Supervisor Dashboard
+    websocket_service.broadcast("order.created", {"order_id": order_id, "status": "PENDING_SUPERVISOR_REVIEW", "plan_id": plan["id"]})
+    websocket_service.notify_schedule_updated()
 
-    return make_success(created, meta={"contract_id": contract_id, "material_feasibility": mat_check, "workforce_capacity": wf_check}, status_code=201)
+    return make_success(
+        created,
+        meta={
+            "plan": plan,
+            "status": "PENDING_SUPERVISOR_REVIEW",
+            "contract_id": contract_id,
+            "material_feasibility": mat_check,
+            "workforce_capacity": wf_check
+        },
+        status_code=201
+    )
 
 @orders_v1_bp.route("/orders/plan", methods=["POST"])
 @role_required("MANAGER", "SUPERVISOR")
@@ -153,13 +178,23 @@ def generate_order_plan():
         user_id=user["id"],
         username=user["username"]
     )
-    return make_success(plan, meta={"status": "PENDING_SUPERVISOR_APPROVAL"})
+    return make_success(plan, meta={"status": "PENDING_SUPERVISOR_REVIEW"})
 
 @orders_v1_bp.route("/orders/plans", methods=["GET"])
+@orders_v1_bp.route("/supervisor/plans", methods=["GET"])
 def list_order_plans():
     from backend.database.mongo import get_collection
     plans = list(get_collection("planning_plans").find({}, {"_id": 0}).sort("created_at", -1))
     return make_success(plans, meta={"total_plans": len(plans)})
+
+@orders_v1_bp.route("/orders/plan/<string:plan_id>", methods=["GET"])
+@orders_v1_bp.route("/planning/orders/<string:plan_id>", methods=["GET"])
+def get_order_plan(plan_id):
+    from backend.database.mongo import get_collection
+    plan = get_collection("planning_plans").find_one({"$or": [{"id": plan_id}, {"order_id": plan_id}]}, {"_id": 0})
+    if not plan:
+        return make_error("NOT_FOUND", f"Plan '{plan_id}' not found.", status_code=404)
+    return make_success(plan)
 
 @orders_v1_bp.route("/orders/plan/<string:plan_id>/validate", methods=["POST"])
 @role_required("SUPERVISOR", "MANAGER")
@@ -175,6 +210,7 @@ def validate_order_plan(plan_id):
     return make_success(validation)
 
 @orders_v1_bp.route("/orders/plan/<string:plan_id>/approve", methods=["POST"])
+@orders_v1_bp.route("/supervisor/plans/<string:plan_id>/approve", methods=["POST"])
 @role_required("SUPERVISOR", "MANAGER")
 def approve_order_plan(plan_id):
     user_id = get_jwt_identity()
@@ -183,19 +219,23 @@ def approve_order_plan(plan_id):
 
     try:
         appr = PlanApprovalSchema(**raw_data)
-        result = order_planning_service.approve_plan(
-            plan_id=plan_id,
-            operations=appr.operations,
-            notes=appr.notes or "Approved",
-            username=user["username"]
-        )
-        return make_success(result)
-    except DomainError as de:
-        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
     except Exception as e:
-        return make_error("INTERNAL_ERROR", str(e), status_code=500)
+        return make_error("VALIDATION_ERROR", str(e), status_code=400)
+
+    try:
+        res = order_planning_service.approve_plan(
+            plan_id=plan_id,
+            user_id=user["id"] if isinstance(user, dict) and "id" in user else "USR-SUP-01",
+            username=user.get("username", "supervisor") if isinstance(user, dict) else "supervisor",
+            override_operations=appr.operations,
+            notes=appr.notes
+        )
+        return make_success(res)
+    except Exception as e:
+        return make_error("APPROVAL_FAILED", str(e), status_code=400)
 
 @orders_v1_bp.route("/orders/plan/<string:plan_id>/reject", methods=["POST"])
+@orders_v1_bp.route("/supervisor/plans/<string:plan_id>/reject", methods=["POST"])
 @role_required("SUPERVISOR", "MANAGER")
 def reject_order_plan(plan_id):
     raw_data = request.get_json() or {}

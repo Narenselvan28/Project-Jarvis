@@ -87,8 +87,9 @@ def seed_mongo():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    db.users.insert_many(users)
-    print(f"[Seed] Created {len(users)} operational users.")
+    for u in users:
+        db.users.update_one({"username": u["username"]}, {"$set": u}, upsert=True)
+    print(f"[Seed] Created/updated {len(users)} operational users.")
 
     # 2. Seed Lanes
     lanes = [
@@ -684,7 +685,7 @@ def seed_mongo():
         "quantity": 8000,
         "priority": "HIGH",
         "deadline": (now + timedelta(hours=36)).isoformat(),
-        "status": "PENDING_SUPERVISOR_APPROVAL",
+        "status": "PENDING_SUPERVISOR_REVIEW",
         "estimated_duration_hours": 14.5,
         "estimated_working_days": 1.8,
         "machine_count": 5,

@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
@@ -32,6 +33,10 @@ module.exports = {
     ]
   },
   plugins: [
+    new webpack.DefinePlugin({
+      "process.env.REACT_APP_API_URL": JSON.stringify(process.env.REACT_APP_API_URL || ""),
+      "process.env.REACT_APP_SOCKET_URL": JSON.stringify(process.env.REACT_APP_SOCKET_URL || "")
+    }),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
       title: "ReFlow — Adaptive Production Intelligence"

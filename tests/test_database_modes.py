@@ -73,11 +73,14 @@ def test_database_both_unavailable():
     with pytest.raises(ConnectionError):
         mongo_manager.get_db()
 
-    # Reset back to default auto mode after test
+    # Reset back to environment mode after test
+    import os
+    env_mode = os.getenv("DATABASE_MODE", "local").lower().strip()
     mongo_manager.reconnect(
-        mode="auto",
+        mode=env_mode,
         atlas_uri="mongodb+srv://narenselvan77_db_user:KaSVVs32FLiaLKqQ@cluster0.hpfub4u.mongodb.net/reflow?retryWrites=true&w=majority&appName=Cluster0",
         local_uri="mongodb://127.0.0.1:27017",
         db_name="reflow",
-        timeout_ms=5000
+        timeout_ms=2000
     )
+

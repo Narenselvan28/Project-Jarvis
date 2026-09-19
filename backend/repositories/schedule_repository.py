@@ -64,10 +64,12 @@ class ScheduleRepository(BaseRepository):
         for op in operations:
             op_doc = dict(op)
             op_doc["schedule_id"] = schedule_id
+            if not op_doc.get("order_id"):
+                op_doc["order_id"] = schedule_id.replace("SCHED-", "").split("-v")[0]
             op_doc["version"] = version
             op_doc["updated_at"] = datetime.utcnow().isoformat()
             op_coll.update_one(
-                {"schedule_id": schedule_id, "order_id": op.get("order_id"), "sequence": op.get("sequence")},
+                {"schedule_id": schedule_id, "order_id": op_doc.get("order_id"), "sequence": op.get("sequence")},
                 {"$set": op_doc},
                 upsert=True
             )

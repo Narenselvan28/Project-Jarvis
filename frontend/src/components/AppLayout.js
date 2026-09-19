@@ -33,9 +33,11 @@ export default function AppLayout({ user, onLogout }) {
   const isErpActive = location.pathname === "/erp";
   const isAnalyticsActive = location.pathname === "/analytics";
   const isAuditActive = location.pathname === "/audit" || location.pathname === "/audit-logs";
+  const isAdminActive = location.pathname === "/admin";
 
   // Derive breadcrumb
   const getBreadcrumb = () => {
+    if (isAdminActive) return { section: "Administration", title: "Admin Console & System Governance" };
     if (isFactoryActive) return { section: "Operations", title: "Factory Floor (Nilayam)" };
     if (isOrdersActive) return { section: "Operations", title: "Orders Registry (Aanaigal)" };
     if (isSupervisorActive) return { section: "Operations", title: "Supervisor Review (Meerpaarvai)" };
@@ -285,6 +287,26 @@ export default function AppLayout({ user, onLogout }) {
                       <div className="flex flex-col leading-tight">
                         <span>Audit Trail</span>
                         <span className="text-[10px] text-textSub opacity-80">Governance & Event Logs</span>
+                      </div>
+                    )}
+                  </Link>
+                </li>
+
+                <li>
+                  <Link
+                    to="/admin"
+                    title={collapsed ? "Admin Console" : undefined}
+                    className={`flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                      isAdminActive
+                        ? "bg-bgMain font-semibold text-primary border-l-2 border-primary"
+                        : "text-textMain hover:bg-bgMain"
+                    } ${collapsed ? "justify-center px-0" : ""}`}
+                  >
+                    <i className="fa-solid fa-gear text-textSub w-4 text-center"></i>
+                    {!collapsed && (
+                      <div className="flex flex-col leading-tight">
+                        <span>Admin Console</span>
+                        <span className="text-[10px] text-textSub opacity-80">User & System Governance</span>
                       </div>
                     )}
                   </Link>
