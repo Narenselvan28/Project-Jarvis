@@ -9,6 +9,11 @@ from backend.domain.machine_state import MachineState, MachineStateMachine, VALI
 from backend.domain.maintenance_workflow import MaintenanceStatus, MaintenanceWorkflow
 from backend.domain.schedule_versioning import ScheduleStatus, ScheduleType, ScheduleVersioning
 
+from backend.domain.state_machine import (
+    StateTransitionService, ProductionPlanState, RecoveryState,
+    MachineState, MaintenanceState
+)
+
 __all__ = [
     "DomainError", "ValidationError", "AuthorizationError",
     "MachineUnavailableError", "InvalidStateTransitionError",
@@ -17,5 +22,6 @@ __all__ = [
     "MaintenanceStateError", "ResourceNotFoundError",
     "MachineState", "MachineStateMachine", "VALID_TRANSITIONS", "ROLE_PERMISSIONS",
     "MaintenanceStatus", "MaintenanceWorkflow",
-    "ScheduleStatus", "ScheduleType", "ScheduleVersioning"
+    "ScheduleStatus", "ScheduleType", "ScheduleVersioning",
+    "StateTransitionService", "ProductionPlanState", "RecoveryState", "MaintenanceState"
 ]

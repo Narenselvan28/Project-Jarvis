@@ -24,7 +24,7 @@ class Config:
     MONGODB_LOCAL_URI = os.getenv("MONGODB_LOCAL_URI", "mongodb://127.0.0.1:27017")
     MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "reflow")
     MONGODB_CONNECTION_TIMEOUT_MS = int(os.getenv("MONGODB_CONNECTION_TIMEOUT_MS", "5000"))
-
+    
     # Legacy SQL settings retained for backward-compatibility if needed
     MYSQL_USER = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")

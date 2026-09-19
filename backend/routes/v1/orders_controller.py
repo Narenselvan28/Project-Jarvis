@@ -231,6 +231,8 @@ def approve_order_plan(plan_id):
             notes=appr.notes
         )
         return make_success(res)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
     except Exception as e:
         return make_error("APPROVAL_FAILED", str(e), status_code=400)
 
@@ -238,12 +240,20 @@ def approve_order_plan(plan_id):
 @orders_v1_bp.route("/supervisor/plans/<string:plan_id>/reject", methods=["POST"])
 @role_required("SUPERVISOR", "MANAGER")
 def reject_order_plan(plan_id):
+    user_id = get_jwt_identity()
+    user = user_repo.get_by_id(user_id) or {"username": "supervisor", "role": "SUPERVISOR"}
     raw_data = request.get_json() or {}
     reason = raw_data.get("reason", "Rejected by Supervisor")
-    from backend.database.mongo import get_collection
-    get_collection("planning_plans").update_one(
-        {"id": plan_id},
-        {"$set": {"status": "REJECTED", "rejection_reason": reason}}
-    )
-    return make_success({"status": "REJECTED", "plan_id": plan_id, "reason": reason})
+    try:
+        res = order_planning_service.reject_plan(
+            plan_id=plan_id,
+            reason=reason,
+            username=user.get("username", "supervisor") if isinstance(user, dict) else "supervisor",
+            user_id=user.get("id") if isinstance(user, dict) else "USR-SUP-01"
+        )
+        return make_success(res)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
+    except Exception as e:
+        return make_error("REJECTION_FAILED", str(e), status_code=400)
 

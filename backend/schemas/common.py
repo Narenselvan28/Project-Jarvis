@@ -32,12 +32,21 @@ def make_success(data: Any, meta: Dict[str, Any] = None, status_code: int = 200)
 
 def make_error(code: str, message: str, details: Any = None, status_code: int = 400):
     from flask import jsonify
+    err_obj = {
+        "code": code,
+        "error": code,
+        "message": message,
+        "details": details
+    }
+    if isinstance(details, dict):
+        if "current_state" in details:
+            err_obj["current_state"] = details["current_state"]
+        if "requested_state" in details:
+            err_obj["requested_state"] = details["requested_state"]
+        elif "target_state" in details:
+            err_obj["requested_state"] = details["target_state"]
     payload = {
         "success": False,
-        "error": {
-            "code": code,
-            "message": message,
-            "details": details
-        }
+        "error": err_obj
     }
     return jsonify(payload), status_code

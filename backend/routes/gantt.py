@@ -27,9 +27,20 @@ def get_order_gantt(order_id):
     if not order:
         return jsonify({"error": f"Order {order_id} not found"}), 404
 
+    active_sched = get_collection("production_schedules").find_one({"status": "ACTIVE"}, {"_id": 0})
+    query = {"order_id": order_id}
+    if active_sched:
+        query["schedule_id"] = active_sched["id"]
+
     sched_ops = list(get_collection("schedule_operations").find(
-        {"order_id": order_id}, {"_id": 0}
+        query, {"_id": 0}
     ).sort("sequence", 1))
+
+    if not sched_ops and active_sched:
+        # Fallback to any schedule operations for order
+        sched_ops = list(get_collection("schedule_operations").find(
+            {"order_id": order_id}, {"_id": 0}
+        ).sort("sequence", 1))
 
     # If no schedule_operations exist yet, fall back to order_operations
     if not sched_ops:

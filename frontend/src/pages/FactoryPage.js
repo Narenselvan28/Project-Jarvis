@@ -173,6 +173,8 @@ export default function FactoryPage({ user }) {
             lanes={lanesWithMachines}
             machines={machines}
             activeOrders={activeOrders}
+            orderRoutes={factoryData?.order_routes || {}}
+            activeSchedule={factoryData?.active_schedule}
             selectedMachine={selectedMachine}
             onSelectMachine={(m) => setSelectedMachine(m)}
             onSelectOrder={(ordId) => setInspectOrderId(ordId)}

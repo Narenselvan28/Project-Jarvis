@@ -102,6 +102,15 @@ def simulate_disruption_manager():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+@disruptions_bp.route("/recovery/<string:disruption_id>", methods=["GET"])
+@disruptions_bp.route("/recommendations/<string:disruption_id>", methods=["GET"])
+def get_recovery_info(disruption_id):
+    try:
+        data = disruption_service.get_recovery_details(disruption_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 404
+
 @disruptions_bp.route("/recommendations/<string:disruption_id>/approve", methods=["POST"])
 @disruptions_bp.route("/recovery/<string:disruption_id>/approve", methods=["POST"])
 def approve_recovery_option(disruption_id):

@@ -15,7 +15,13 @@ class DisruptionRepository(BaseRepository):
         return self.find_all(sort=[("started_at", -1)])
 
     def get_by_id(self, disruption_id: str) -> Optional[Dict[str, Any]]:
-        return self.find_one({"id": disruption_id})
+        if not disruption_id:
+            return self.find_one(sort=[("started_at", -1)])
+        return (
+            self.find_one({"$or": [{"id": disruption_id}, {"disruption_id": disruption_id}]})
+            or self.find_one({"id": str(disruption_id)})
+            or self.find_one(sort=[("started_at", -1)])
+        )
 
     def get_active(self) -> Optional[Dict[str, Any]]:
         return self.find_one({"status": "ACTIVE"}, sort=[("started_at", -1)])

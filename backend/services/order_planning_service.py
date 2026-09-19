@@ -17,7 +17,8 @@ from backend.optimization.scheduler import production_scheduler
 from backend.optimization.constraints import SchedulingModelBuilder
 from backend.domain.schedule_versioning import ScheduleStatus, ScheduleType
 from backend.services.websocket_service import websocket_service
-from backend.domain.errors import ValidationError, ResourceNotFoundError
+from backend.domain.errors import ValidationError, ResourceNotFoundError, InvalidStateTransitionError
+from backend.domain.state_machine import StateTransitionService, ProductionPlanState
 
 class OrderPlanningService:
     @staticmethod
@@ -275,8 +276,12 @@ class OrderPlanningService:
             raise ResourceNotFoundError("Plan", plan_id)
 
         curr_status = plan.get("status", "PENDING_SUPERVISOR_REVIEW")
-        if curr_status not in ["PENDING_SUPERVISOR_REVIEW", "PENDING_SUPERVISOR_APPROVAL", "PENDING"]:
-            raise InvalidStateTransitionError(curr_status, "SUPERVISOR_APPROVED", details={"reason": f"Plan is already in state '{curr_status}'."})
+        StateTransitionService.validate_transition(
+            entity_type="PLAN",
+            current_state=curr_status,
+            target_state="SUPERVISOR_APPROVED",
+            role="SUPERVISOR"
+        )
 
         # Validate with OR-Tools constraint checker
         effective_ops = override_operations if override_operations is not None else operations
@@ -353,5 +358,55 @@ class OrderPlanningService:
         websocket_service.broadcast("order.updated", {"order_id": order_id, "status": "ACTIVE"})
         websocket_service.notify_schedule_updated()
         return {"approved": True, "order_id": order_id, "status": "APPROVED", "lifecycle_status": "SUPERVISOR_APPROVED"}
+
+    @staticmethod
+    def reject_plan(
+        plan_id: str,
+        reason: str = "Rejected by Supervisor",
+        username: str = "supervisor",
+        user_id: str = None
+    ) -> Dict[str, Any]:
+        from backend.database.mongo import get_collection
+        plan_coll = get_collection("planning_plans")
+        plan = plan_coll.find_one({"id": plan_id})
+        if not plan:
+            raise ResourceNotFoundError("Plan", plan_id)
+
+        curr_status = plan.get("status", "PENDING_SUPERVISOR_REVIEW")
+        StateTransitionService.validate_transition(
+            entity_type="PLAN",
+            current_state=curr_status,
+            target_state="REJECTED",
+            role="SUPERVISOR"
+        )
+
+        plan_coll.update_one(
+            {"id": plan_id},
+            {"$set": {
+                "status": "REJECTED",
+                "rejection_reason": reason,
+                "rejected_at": datetime.utcnow().isoformat(),
+                "rejected_by": username
+            }}
+        )
+
+        order_id = plan.get("order_id")
+        if order_id:
+            get_collection("orders").update_one(
+                {"id": order_id},
+                {"$set": {"status": "REJECTED", "rejection_reason": reason}}
+            )
+
+        audit_repo.record_event(
+            action="PLAN_REJECTED",
+            actor=username,
+            role="SUPERVISOR",
+            entity="PLAN",
+            entity_id=plan_id,
+            metadata={"reason": reason}
+        )
+
+        websocket_service.broadcast("plan.rejected", {"plan_id": plan_id, "order_id": order_id, "status": "REJECTED"})
+        return {"rejected": True, "plan_id": plan_id, "status": "REJECTED", "reason": reason}
 
 order_planning_service = OrderPlanningService()

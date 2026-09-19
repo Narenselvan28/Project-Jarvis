@@ -101,7 +101,8 @@ export default function SupervisorReviewPage({ user }) {
       await loadPlans();
     } catch (err) {
       console.error("Approval error:", err);
-      const msg = err.response?.data?.error?.message || err.response?.data?.error || "Approval failed.";
+      const errObj = err.response?.data?.error || err.response?.data;
+      const msg = errObj?.message || (typeof errObj === "string" ? errObj : "Approval failed: Invalid state transition.");
       setActionMessage({ type: "ERROR", text: msg });
     } finally {
       setIsSubmitting(false);
@@ -137,6 +138,11 @@ export default function SupervisorReviewPage({ user }) {
   const totalPredictedMin = ops.reduce((acc, o) => acc + (o.predicted_time_min || o.processing_time_min || 0), 0);
   const totalPredictedHours = (totalPredictedMin / 60).toFixed(1);
   const failureRiskPct = editingPlan?.failure_risk_pct || editingPlan?.avg_failure_risk || "4.2";
+
+  const planStatus = (editingPlan?.status || "PENDING_SUPERVISOR_REVIEW").toUpperCase();
+  const isPendingReview = ["PENDING_SUPERVISOR_REVIEW", "PENDING", "PENDING_SUPERVISOR_APPROVAL", "SUPERVISOR_EDITED"].includes(planStatus);
+  const isApproved = ["SUPERVISOR_APPROVED", "ACTIVE", "IN_PRODUCTION", "COMPLETED"].includes(planStatus);
+  const isRejected = planStatus === "REJECTED";
 
   return (
     <div className="flex-1 flex flex-col h-full bg-bgMain overflow-hidden p-6 antialiased">
@@ -263,49 +269,89 @@ export default function SupervisorReviewPage({ user }) {
 
                 {isSupervisorOrManager && (
                   <div className="flex items-center gap-2">
-                    {/* View Mode Switcher: [ REVIEW ] / [ EDIT PLAN ] */}
-                    <button
-                      onClick={() => setViewMode("REVIEW")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                        viewMode === "REVIEW"
-                          ? "bg-primaryLight text-primary border border-plum-100"
-                          : "bg-white border border-borderCol text-textSub hover:bg-bgMain"
-                      }`}
-                    >
-                      <i className="fa-solid fa-eye mr-1"></i>
-                      <span>REVIEW</span>
-                    </button>
+                    {/* State-aware action buttons */}
+                    {isPendingReview ? (
+                      <>
+                        <button
+                          onClick={() => setViewMode("REVIEW")}
+                          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                            viewMode === "REVIEW"
+                              ? "bg-primaryLight text-primary border border-plum-100"
+                              : "bg-white border border-borderCol text-textSub hover:bg-bgMain"
+                          }`}
+                        >
+                          <i className="fa-solid fa-eye mr-1"></i>
+                          <span>REVIEW</span>
+                        </button>
 
-                    <button
-                      onClick={() => setViewMode("EDIT")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                        viewMode === "EDIT"
-                          ? "bg-primaryLight text-primary border border-plum-100"
-                          : "bg-white border border-borderCol text-textSub hover:bg-bgMain"
-                      }`}
-                    >
-                      <i className="fa-solid fa-pen mr-1"></i>
-                      <span>EDIT PLAN</span>
-                    </button>
+                        <button
+                          onClick={() => setViewMode("EDIT")}
+                          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                            viewMode === "EDIT"
+                              ? "bg-primaryLight text-primary border border-plum-100"
+                              : "bg-white border border-borderCol text-textSub hover:bg-bgMain"
+                          }`}
+                        >
+                          <i className="fa-solid fa-pen mr-1"></i>
+                          <span>EDIT PLAN</span>
+                        </button>
 
-                    {/* Action: [ APPROVE PLAN ] -> Triggers Confirmation Modal */}
-                    <button
-                      onClick={() => setShowApproveModal(true)}
-                      disabled={isSubmitting}
-                      className="px-3.5 py-1.5 bg-primary hover:bg-primaryHover text-white rounded-md text-xs font-bold transition-colors shadow-sm"
-                    >
-                      <i className="fa-solid fa-check mr-1"></i>
-                      <span>APPROVE PLAN</span>
-                    </button>
+                        <button
+                          onClick={() => setShowApproveModal(true)}
+                          disabled={isSubmitting}
+                          className="px-3.5 py-1.5 bg-primary hover:bg-primaryHover text-white rounded-md text-xs font-bold transition-colors shadow-sm"
+                        >
+                          <i className="fa-solid fa-check mr-1"></i>
+                          <span>APPROVE PLAN</span>
+                        </button>
 
-                    {/* Action: [ REJECT PLAN ] -> Triggers Rejection Modal */}
-                    <button
-                      onClick={() => setShowRejectModal(true)}
-                      disabled={isSubmitting}
-                      className="px-3 py-1.5 bg-criticalLight text-critical border border-rose-200 hover:bg-critical hover:text-white rounded-md text-xs font-medium transition-colors"
-                    >
-                      <span>REJECT PLAN</span>
-                    </button>
+                        <button
+                          onClick={() => setShowRejectModal(true)}
+                          disabled={isSubmitting}
+                          className="px-3 py-1.5 bg-criticalLight text-critical border border-rose-200 hover:bg-critical hover:text-white rounded-md text-xs font-medium transition-colors"
+                        >
+                          <span>REJECT PLAN</span>
+                        </button>
+                      </>
+                    ) : isRejected ? (
+                      <>
+                        <button
+                          onClick={() => setViewMode("REVIEW")}
+                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-borderCol text-textSub hover:bg-bgMain"
+                        >
+                          <i className="fa-solid fa-eye mr-1"></i>
+                          <span>VIEW DETAILS</span>
+                        </button>
+                        <span className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md text-xs font-bold font-mono">
+                          <i className="fa-solid fa-ban mr-1"></i> PLAN REJECTED
+                        </span>
+                        <button
+                          onClick={() => {
+                            setActionMessage({
+                              type: "SUCCESS",
+                              text: `Re-optimization triggered for Order ${editingPlan.order_id}. Generating new candidate plan.`
+                            });
+                          }}
+                          className="px-3 py-1.5 bg-primaryLight text-primary border border-plum-200 hover:bg-primary hover:text-white rounded-md text-xs font-medium transition-colors"
+                        >
+                          <i className="fa-solid fa-arrows-rotate mr-1"></i>
+                          <span>REGENERATE PLAN</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setViewMode("REVIEW")}
+                          className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white border border-borderCol text-textSub hover:bg-bgMain"
+                        >
+                          <i className="fa-solid fa-eye mr-1"></i>
+                          <span>VIEW DETAILS</span>
+                        </button>
+                        <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-xs font-bold font-mono">
+                          <i className="fa-solid fa-check-circle mr-1"></i> ACTIVE ON FLOOR
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -472,34 +518,44 @@ export default function SupervisorReviewPage({ user }) {
                 <i className="fa-solid fa-clipboard-check"></i>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-textMain">
-                  Approve Production Schedule?
+                <h3 className="text-sm font-bold text-textMain tracking-wide uppercase">
+                  CONFIRM PRODUCTION PLAN
                 </h3>
                 <p className="text-[11px] text-textSub">
-                  Confirm approval to transition plan from PENDING_SUPERVISOR_REVIEW to ACTIVE.
+                  Confirm that this plan should become the active production schedule?
                 </p>
               </div>
             </div>
 
             <div className="bg-bgMain p-3.5 rounded-lg border border-borderCol space-y-2 text-xs font-mono">
               <div className="flex justify-between">
+                <span className="text-textSub font-sans">Plan ID:</span>
+                <span className="font-bold text-primary">{editingPlan.id}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-textSub font-sans">Order ID:</span>
-                <span className="font-bold text-primary">{editingPlan.order_id}</span>
+                <span className="font-bold text-textMain">{editingPlan.order_id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-textSub font-sans">Product Formulation:</span>
-                <span className="font-bold text-textMain">{editingPlan.product_name}</span>
+                <span className="text-textSub font-sans">Allocated Machines:</span>
+                <span className="font-bold text-textMain truncate max-w-[200px]" title={assignedMachines.join(", ")}>
+                  {assignedMachines.length > 0 ? assignedMachines.join(", ") : "Optimal Fleet Selection"}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-textSub font-sans">ML Estimated Duration:</span>
+                <span className="text-textSub font-sans">Predicted Completion:</span>
                 <span className="text-textMain">{totalPredictedHours} hrs ({totalPredictedMin} min)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-textSub font-sans">Estimated Cost:</span>
-                <span className="text-textMain font-bold">₹{(editingPlan.estimated_cost || 85000).toLocaleString()}</span>
+                <span className="text-textSub font-sans">Delivery Deadline:</span>
+                <span className="text-textMain font-semibold">{editingPlan.delivery_date || editingPlan.due_date || "Within Customer SLA"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-textSub font-sans">New Schedule Status:</span>
+                <span className="text-textSub font-sans">Cost:</span>
+                <span className="text-textMain font-bold">₹{(editingPlan.estimated_cost || 85000).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-borderCol/60">
+                <span className="text-textSub font-sans">Target Schedule Version:</span>
                 <span className="text-emerald-700 font-bold">ACTIVE (Version 1)</span>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import MachineNode from "./MachineNode";
 import FlowConnector from "./FlowConnector";
 
@@ -6,6 +6,8 @@ export default function FactoryMap({
   lanes = [],
   machines = [],
   activeOrders = [],
+  orderRoutes = {},
+  activeSchedule = null,
   selectedMachine,
   onSelectMachine,
   onSelectOrder
@@ -41,37 +43,48 @@ export default function FactoryMap({
   };
 
   // Map of machine_id -> machine object
-  const machineMap = {};
-  machines.forEach((m) => {
-    machineMap[m.id] = m;
-  });
+  const machineMap = useMemo(() => {
+    const map = {};
+    machines.forEach((m) => {
+      map[m.id] = m;
+    });
+    return map;
+  }, [machines]);
 
-  // Check if ORD-1042 or any order has a cross-lane substitution active
-  let crossLaneReassignments = [];
-  activeOrders.forEach((ord) => {
-    if (ord.operations) {
-      ord.operations.forEach((op, idx) => {
-        if (op.status === "REASSIGNED" && op.original_machine_id && op.assigned_machine_id) {
-          const prevOp = ord.operations[idx - 1];
-          const nextOp = ord.operations[idx + 1];
-          if (prevOp && prevOp.assigned_machine_id) {
-            crossLaneReassignments.push({
-              from: machineMap[prevOp.assigned_machine_id],
-              to: machineMap[op.assigned_machine_id],
-              orderId: ord.id
-            });
-          }
-          if (nextOp && nextOp.assigned_machine_id) {
-            crossLaneReassignments.push({
-              from: machineMap[op.assigned_machine_id],
-              to: machineMap[nextOp.assigned_machine_id],
-              orderId: ord.id
+  // Derive genuine sequential operation routes from backend order_routes topology (Part 16 & 17)
+  const orderRouteSegments = useMemo(() => {
+    const segments = [];
+    const routeEntries = Object.entries(orderRoutes);
+
+    if (routeEntries.length > 0) {
+      routeEntries.forEach(([ordId, ops]) => {
+        // Sort explicitly by sequence index
+        const sortedOps = [...ops].sort((a, b) => (a.sequence || 1) - (b.sequence || 1));
+        for (let i = 0; i < sortedOps.length - 1; i++) {
+          const curr = sortedOps[i];
+          const next = sortedOps[i + 1];
+          const fromM = machineMap[curr.machine_id];
+          const toM = machineMap[next.machine_id];
+          if (fromM && toM) {
+            const isReassigned = Boolean(
+              curr.is_reassigned || next.is_reassigned ||
+              curr.status === "REASSIGNED" || next.status === "REASSIGNED" ||
+              curr.original_machine_id || next.original_machine_id
+            );
+            segments.push({
+              key: `${ordId}-seq-${curr.sequence}-${next.sequence}`,
+              fromMachine: fromM,
+              toMachine: toM,
+              isReassigned,
+              isActive: fromM.status === "RUNNING" || toM.status === "RUNNING",
+              orderId: ordId
             });
           }
         }
       });
     }
-  });
+    return segments;
+  }, [orderRoutes, machineMap]);
 
   return (
     <div className="factory-canvas-area" ref={containerRef}>
@@ -83,6 +96,11 @@ export default function FactoryMap({
         <span style={{ fontSize: "0.72rem", color: "#64748b", fontFamily: "monospace", marginLeft: "0.5rem" }}>
           Zoom: {Math.round(zoom * 100)}%
         </span>
+        {activeSchedule && (
+          <span style={{ fontSize: "0.72rem", color: "#047857", background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "2px 8px", borderRadius: "4px", fontFamily: "monospace", fontWeight: 700, marginLeft: "0.75rem" }}>
+            SCHEDULE: {activeSchedule.id || "SCHED-V1"} (v{activeSchedule.version || 1}) • {activeSchedule.status || "ACTIVE"}
+          </span>
+        )}
       </div>
 
       <svg
@@ -159,32 +177,34 @@ export default function FactoryMap({
             );
           })}
 
-          {/* Sequential Connectors within Each Lane */}
+          {/* Baseline Physical Lane Connectors */}
           {lanes.map((lane) => {
             const laneMachines = lane.machines || [];
             return laneMachines.map((m, idx) => {
               if (idx === laneMachines.length - 1) return null;
               const nextM = laneMachines[idx + 1];
               const isBlocked = m.status === "FAILED" || nextM.status === "FAILED";
+              const hasOrderRoutes = orderRouteSegments.length > 0;
               return (
                 <FlowConnector
-                  key={`${m.id}-${nextM.id}`}
+                  key={`lane-${m.id}-${nextM.id}`}
                   fromMachine={m}
                   toMachine={nextM}
-                  isActive={m.status === "RUNNING"}
+                  isActive={!hasOrderRoutes && m.status === "RUNNING"}
                   isBlocked={isBlocked}
                 />
               );
             });
           })}
 
-          {/* Cross-Lane Dynamic Reassignment Connectors */}
-          {crossLaneReassignments.map((c, i) => (
+          {/* Sequential Order Production & Recovery Routes (Part 16 & 17) */}
+          {orderRouteSegments.map((seg) => (
             <FlowConnector
-              key={`reassign-${i}`}
-              fromMachine={c.from}
-              toMachine={c.to}
-              isReassigned={true}
+              key={seg.key}
+              fromMachine={seg.fromMachine}
+              toMachine={seg.toMachine}
+              isReassigned={seg.isReassigned}
+              isActive={seg.isActive}
             />
           ))}
 

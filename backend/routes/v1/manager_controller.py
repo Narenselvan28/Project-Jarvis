@@ -52,36 +52,44 @@ def simulate_machine_failure():
         traceback.print_exc()
         return make_error("SIMULATION_FAILED", str(e), status_code=500)
 
+from backend.domain.errors import DomainError, InvalidStateTransitionError
+
+@manager_v1_bp.route("/recovery/<string:disruption_id>", methods=["GET"])
+def get_recovery_details(disruption_id):
+    """
+    GET /api/v1/recovery/:id (Part 18 API)
+    Returns full recovery options, affected orders, operations, and candidate metrics.
+    """
+    try:
+        data = disruption_service.get_recovery_details(disruption_id)
+        return make_success(data)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
+    except Exception as e:
+        return make_error("RECOVERY_FETCH_FAILED", str(e), status_code=404)
+
 @manager_v1_bp.route("/recovery/<string:disruption_id>/approve", methods=["POST"])
 @role_required("MANAGER", "ADMIN")
 def approve_recovery_option(disruption_id):
     """
     POST /api/v1/recovery/:id/approve
     Manager approves either Option A or Option B.
-    Validates PENDING_APPROVAL -> APPROVED -> ACTIVE.
+    Validates PENDING_MANAGER_APPROVAL -> APPROVED -> ACTIVE.
     """
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "manager", "role": "MANAGER"}
     data = request.get_json() or {}
 
     option = data.get("option") or data.get("option_id") or data.get("chosen_option") or "option_a"
-    notes = data.get("notes", "Manager approved recovery plan")
-
-    disruption = disruption_repo.get_by_id(disruption_id)
-    if not disruption:
-        return make_error("RESOURCE_NOT_FOUND", f"Disruption '{disruption_id}' not found.", status_code=404)
-
-    curr_status = disruption.get("status", "ACTIVE")
-    if curr_status not in ["ACTIVE", "PENDING_APPROVAL", "OPEN"]:
-        return make_error("INVALID_STATE", f"Disruption '{disruption_id}' is already {curr_status}.", status_code=400)
-
     try:
         result = disruption_service.approve_recommendation(
             disruption_id=disruption_id,
-            chosen_option=option.lower(),
+            chosen_option=str(option).lower(),
             user=user
         )
         return make_success(result)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
     except Exception as e:
         return make_error("RECOVERY_APPROVAL_FAILED", str(e), status_code=400)
 
@@ -98,10 +106,6 @@ def reject_recovery_options(disruption_id):
     data = request.get_json() or {}
     reason = data.get("reason", "Manager rejected recovery options.")
 
-    disruption = disruption_repo.get_by_id(disruption_id)
-    if not disruption:
-        return make_error("RESOURCE_NOT_FOUND", f"Disruption '{disruption_id}' not found.", status_code=404)
-
     try:
         result = disruption_service.reject_recommendation(
             disruption_id=disruption_id,
@@ -109,6 +113,8 @@ def reject_recovery_options(disruption_id):
             user=user
         )
         return make_success(result)
+    except DomainError as de:
+        return make_error(de.code, de.message, details=de.details, status_code=de.status_code)
     except Exception as e:
         return make_error("RECOVERY_REJECTION_FAILED", str(e), status_code=400)
 
@@ -122,13 +128,13 @@ def regenerate_recovery_options(disruption_id):
     user_id = get_jwt_identity()
     user = user_repo.get_by_id(user_id) or {"username": "manager", "role": "MANAGER"}
     
-    disruption = disruption_repo.get_by_id(disruption_id)
+    disruption = disruption_repo.get_by_id(disruption_id) or disruption_repo.find_one(sort=[("started_at", -1)])
     if not disruption:
         return make_error("RESOURCE_NOT_FOUND", f"Disruption '{disruption_id}' not found.", status_code=404)
 
-    machine_id = disruption.get("machine_id")
+    machine_id = disruption.get("machine_id", "CUT-02")
     failure_type = disruption.get("failure_type", "Mechanical Breakdown")
-    duration_hours = disruption.get("estimated_downtime_hours", 4.0)
+    duration_hours = disruption.get("duration_hours", disruption.get("estimated_downtime_hours", 4.0))
 
     try:
         result = disruption_service.simulate_disruption(

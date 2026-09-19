@@ -28,7 +28,8 @@ export default function MachineNode({ machine, isSelected, onClick }) {
 
   const isFailed = status === "FAILED";
   const isRunning = status === "RUNNING";
-  const isReassigned = status === "REASSIGNED";
+  const isReassigned = status === "REASSIGNED" || Boolean(machine.is_reassigned);
+  const originalMachine = machine.original_machine_id;
   const color = STATE_COLORS[status] || "#6B7280";
 
   return (
@@ -137,35 +138,50 @@ export default function MachineNode({ machine, isSelected, onClick }) {
         </g>
       )}
 
-      {/* REASSIGNED label if REASSIGNED (Section 13) */}
+      {/* RECOVERED label & Transition Indicator if REASSIGNED (Part 16) */}
       {isReassigned && (
         <g transform="translate(0, 36)">
           <rect
-            x="-26"
+            x="-28"
             y="-6"
-            width="52"
-            height="12"
+            width="56"
+            height="13"
             rx="3"
             fill="#2563EB"
+            stroke="#FFFFFF"
+            strokeWidth="1"
           />
           <text
             x="0"
-            y="3"
+            y="3.5"
             fill="#FFFFFF"
             fontSize="6.5"
-            fontWeight="700"
+            fontWeight="800"
             fontFamily="Inter, sans-serif"
             textAnchor="middle"
           >
-            REASSIGNED
+            [RECOVERED]
           </text>
+          {originalMachine && (
+            <text
+              x="0"
+              y="14"
+              fill="#2563EB"
+              fontSize="6.5"
+              fontWeight="700"
+              fontFamily="Roboto Mono, monospace"
+              textAnchor="middle"
+            >
+              {originalMachine} → {id}
+            </text>
+          )}
         </g>
       )}
 
       {/* Process Title below node */}
       <text
         x="0"
-        y={isReassigned ? "52" : "42"}
+        y={isReassigned ? (originalMachine ? "58" : "52") : "42"}
         className="machine-sub-text"
         fill="#6B7280"
         fontSize="8"

@@ -32,9 +32,25 @@ class MachineUnavailableError(DomainError):
         super().__init__(msg, code="MACHINE_UNAVAILABLE", status_code=409, details=details)
 
 class InvalidStateTransitionError(DomainError):
-    def __init__(self, current_state: str, target_state: str, entity_type: str = "Machine", details: dict = None):
-        msg = f"Illegal {entity_type} state transition from '{current_state}' to '{target_state}'."
-        super().__init__(msg, code="INVALID_STATE_TRANSITION", status_code=400, details=details)
+    def __init__(self, current_state: str, target_state: str, entity_type: str = "Entity", details: dict = None, message: str = None):
+        self.current_state = str(current_state)
+        self.target_state = str(target_state)
+        self.requested_state = str(target_state)
+        self.entity_type = entity_type
+        default_msg = f"Illegal {entity_type} state transition from '{self.current_state}' to '{self.target_state}'."
+        msg = message or default_msg
+        all_details = details.copy() if isinstance(details, dict) else {}
+        all_details.setdefault("current_state", self.current_state)
+        all_details.setdefault("requested_state", self.target_state)
+        all_details.setdefault("entity_type", self.entity_type)
+        super().__init__(msg, code="INVALID_STATE_TRANSITION", status_code=409, details=all_details)
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["current_state"] = self.current_state
+        d["requested_state"] = self.target_state
+        d["entity_type"] = self.entity_type
+        return d
 
 class ScheduleInfeasibleError(DomainError):
     def __init__(self, message: str = "Unable to compute feasible production schedule under given constraints.", details: dict = None):

@@ -49,13 +49,22 @@ def get_order_gantt(order_id):
     if not order:
         return make_error("RESOURCE_NOT_FOUND", f"Order '{order_id}' not found.", status_code=404)
 
-    operations = schedule_repo.get_operations(order_id=order_id)
+    active_sched = schedule_repo.get_active()
+    active_sched_id = active_sched.get("id") if active_sched else None
+
+    operations = []
+    if active_sched_id:
+        operations = schedule_repo.get_operations(schedule_id=active_sched_id, order_id=order_id)
+    if not operations:
+        operations = schedule_repo.get_operations(order_id=order_id)
     if not operations:
         operations = order.get("operations", [])
 
     return make_success({
         "view": "ORDER",
         "order_id": order_id,
+        "schedule_id": active_sched_id,
+        "schedule_version": active_sched.get("version", 1) if active_sched else 1,
         "product": order.get("product"),
         "quantity": order.get("quantity"),
         "priority": order.get("priority"),

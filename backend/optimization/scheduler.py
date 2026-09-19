@@ -203,6 +203,7 @@ class ProductionScheduler:
         total_setup_min = 0.0
         total_add_cost = 0.0
         total_tardiness = 0.0
+        order_end_times = {}
 
         for order in affected_orders:
             o_id = order.get("id") if isinstance(order, dict) else order.id
@@ -236,8 +237,9 @@ class ProductionScheduler:
                         s_start = float(solver.Value(op_data["start"]))
                         s_end = float(solver.Value(op_data["end"]))
                     else:
-                        s_start = 0.0
-                        s_end = p_min + s_min
+                        s_start = float(order_end_times.get(o_id, 0.0))
+                        s_end = s_start + float(p_min + s_min)
+                    order_end_times[o_id] = max(order_end_times.get(o_id, 0.0), s_end)
 
                     m_info = all_machines.get(m_id, {})
                     m_name = m_info.get("name", m_id) if isinstance(m_info, dict) else getattr(m_info, "name", m_id)

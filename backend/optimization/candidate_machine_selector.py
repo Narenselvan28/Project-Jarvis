@@ -12,12 +12,15 @@ def find_candidate_machines(failed_machine_id, process_id, order, operation, req
 
     # 1. Query machines with matching process_id or in compatible_processes
     # Exclude failed machine and machines in MAINTENANCE
+    proc_str = str(process_id).strip()
     query = {
         "id": {"$ne": failed_machine_id},
-        "status": {"$nin": ["FAILED", "MAINTENANCE"]},
+        "status": {"$nin": ["FAILED", "MAINTENANCE", "BLOCKED"]},
         "$or": [
-            {"process_id": process_id},
-            {"compatible_processes": process_id}
+            {"process_id": proc_str},
+            {"compatible_processes": proc_str},
+            {"process": {"$regex": proc_str, "$options": "i"}},
+            {"id": {"$regex": proc_str, "$options": "i"}}
         ]
     }
     candidates = list(get_collection("machines").find(query, {"_id": 0}))

@@ -9,6 +9,7 @@ from backend.repositories.machine_repository import machine_repo
 from backend.repositories.order_repository import order_repo
 from backend.repositories.disruption_repository import disruption_repo
 from backend.repositories.maintenance_repository import maintenance_repo
+from backend.repositories.schedule_repository import schedule_repo
 from backend.domain.machine_state import MachineState
 from backend.schemas.common import make_success
 
@@ -67,6 +68,40 @@ def get_factory_overview():
             lane_dict["utilization"] = 0.0
         lanes_data.append(lane_dict)
 
+    active_sched = schedule_repo.get_active()
+    active_sched_id = active_sched.get("id") if active_sched else None
+    sched_ops = schedule_repo.get_operations(schedule_id=active_sched_id) if active_sched_id else []
+
+    order_routes = {}
+    for op in sched_ops:
+        ord_id = op.get("order_id")
+        if not ord_id:
+            continue
+        order_routes.setdefault(ord_id, []).append({
+            "sequence": op.get("sequence", 1),
+            "operation": op.get("process_name", op.get("process_id", "Operation")),
+            "process_id": op.get("process_id"),
+            "machine_id": op.get("machine_id") or op.get("assigned_machine_id"),
+            "status": op.get("status", "ACTIVE"),
+            "is_reassigned": op.get("is_reassigned", False),
+            "original_machine_id": op.get("original_machine_id"),
+            "scheduled_start_min": op.get("scheduled_start_min", 0),
+            "scheduled_end_min": op.get("scheduled_end_min", 60)
+        })
+
+    for ord_id in order_routes:
+        order_routes[ord_id].sort(key=lambda x: x["sequence"])
+
+    # Decorate machines with recovery info from active schedule operations
+    for op in sched_ops:
+        m_id = op.get("machine_id") or op.get("assigned_machine_id")
+        if m_id and (op.get("is_reassigned") or op.get("original_machine_id")):
+            for em in enriched_machines:
+                if em.get("id") == m_id:
+                    em["is_reassigned"] = True
+                    em["original_machine_id"] = op.get("original_machine_id")
+                    em["recovered_order_id"] = op.get("order_id")
+
     overview = {
         "factory_name": "ReFlow Nilayam — Adaptive Production Facility",
         "current_shift": "Shift 1 (06:00 - 14:00)",
@@ -75,6 +110,13 @@ def get_factory_overview():
         "machines": enriched_machines,
         "active_orders": active_orders,
         "active_disruptions": active_disruptions,
+        "active_schedule": {
+            "id": active_sched.get("id") if active_sched else "SCHED-V1",
+            "version": active_sched.get("version", 1) if active_sched else 1,
+            "status": active_sched.get("status", "ACTIVE") if active_sched else "ACTIVE",
+            "schedule_type": active_sched.get("schedule_type", "BASELINE") if active_sched else "BASELINE"
+        } if active_sched else None,
+        "order_routes": order_routes,
         "open_maintenance_count": open_maint_count,
         "status_counts": status_counts,
         "total_machines": len(enriched_machines),
