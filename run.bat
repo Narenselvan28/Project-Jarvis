@@ -20,4 +20,5 @@ echo  Default Login Credentials:
 echo    - Manager:        manager / password123
 echo    - Supervisor:     supervisor / password123
 echo    - Service Person: service / password123
+echo    - Administrator:  admin / password123
 echo =====================================================================
