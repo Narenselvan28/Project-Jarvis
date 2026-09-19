@@ -472,6 +472,8 @@ def seed_mongo():
             "deadline": deadline_12h.isoformat(),
             "is_delayed": False,
             "is_reassigned": False,
+            "schedule_id": "SCHED-ACTIVE-01",
+            "schedule_version": 1,
             "original_machine_id": mach_id,
             "reassigned_machine_id": None,
             "production_cost": round(dur_m / 60.0 * 1200.0, 2),
@@ -587,6 +589,8 @@ def seed_mongo():
                 "deadline": (now + timedelta(hours=d_hrs)).isoformat(),
                 "is_delayed": False,
                 "is_reassigned": False,
+                "schedule_id": f"SCHED-{oid}-v1",
+                "schedule_version": 1,
                 "original_machine_id": mach["id"],
                 "reassigned_machine_id": None,
                 "production_cost": round(dur / 60.0 * 500.0, 2)
@@ -602,6 +606,8 @@ def seed_mongo():
     # 10. Seed Active Schedule
     active_sched = {
         "id": "SCHED-ACTIVE-01",
+        "version": 1,
+        "status": "ACTIVE",
         "name": "Live Adaptive Garment Production Schedule",
         "schedule_type": "ADAPTIVE_CP_SAT",
         "is_active": True,
@@ -615,7 +621,8 @@ def seed_mongo():
         "stability_score": 98.5,
         "solver_status": "OPTIMAL",
         "solve_time_ms": 412.0,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.utcnow().isoformat()
     }
     db.schedules.insert_one(active_sched)
 
