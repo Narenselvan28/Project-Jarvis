@@ -76,7 +76,7 @@ def get_machine_candidates(machine_id):
 
     proc_id = machine.get("process_id", "P03")
     candidates = find_candidate_machines(
-        machine_id=machine_id,
+        failed_machine_id=machine_id,
         process_id=proc_id,
         order={"quantity": 5000, "priority": "HIGH"},
         operation={"sequence": 1},

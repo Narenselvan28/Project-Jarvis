@@ -478,7 +478,17 @@ class DisruptionService:
         current_version = int(active_sched.get("version", 1)) if active_sched else 1
         new_version = current_version + 1
         new_sched_id = f"SCHED-RECOVERY-v{new_version}-{disruption_id}"
-        parent_sched_id = active_sched.get("id", f"SCHED-{reassigned_orders[0]}-v1") if active_sched else f"SCHED-{reassigned_orders[0]}-v1"
+
+        # Safe primary order fallback — reassigned_orders may be empty if no ops were affected
+        if reassigned_orders:
+            primary_order_id = reassigned_orders[0]
+        else:
+            # Fetch the failed machine's current_order_id from MongoDB as a fallback
+            failed_mach_doc = mach_coll.find_one({"id": failed_machine_id}, {"_id": 0}) or {}
+            primary_order_id = failed_mach_doc.get("current_order_id", "ORD-1042")
+            reassigned_orders = [primary_order_id] if primary_order_id else []
+
+        parent_sched_id = active_sched.get("id", f"SCHED-{primary_order_id}-v1") if active_sched else f"SCHED-{primary_order_id}-v1"
 
         # Apply OR-Tools Solved Operations with Downstream Timing Propagation (Part 8 & 14)
         solved_ops_map = {}
@@ -598,7 +608,7 @@ class DisruptionService:
             {"id": selected_machine_id},
             {"$set": {
                 "status": "RUNNING",
-                "current_order_id": reassigned_orders[0],
+                "current_order_id": primary_order_id if reassigned_orders else None,
                 "updated_at": datetime.utcnow().isoformat()
             }}
         )
@@ -635,7 +645,7 @@ class DisruptionService:
         websocket_service.broadcast("machine.assignment.updated", {
             "machine_id": selected_machine_id,
             "status": "RUNNING",
-            "order_id": reassigned_orders[0]
+            "order_id": primary_order_id if reassigned_orders else None
         })
         websocket_service.broadcast("factory.updated", {"active_schedule_version": new_version})
         websocket_service.broadcast("gantt.updated", {"active_schedule_version": new_version})
